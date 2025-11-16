@@ -3,7 +3,7 @@
 ## Repository Overview
 **StormCom** - Next.js 16 multi-tenant SaaS e-commerce platform with authentication, user management, and organization features.
 
-**Tech Stack**: Next.js 16.0.3 (Turbopack), React 19.2, TypeScript 5, Prisma 6.19, NextAuth 4.24, shadcn-ui  
+**Tech Stack**: Next.js 16.0.3 (Turbopack), React 19.2, TypeScript 5, Prisma 6.19.0, NextAuth 4.24, shadcn-ui  
 **Size**: ~1,900 lines of TypeScript, 580 npm packages  
 **Runtime**: Node.js v20+ required  
 **Database**: SQLite (dev), PostgreSQL (production planned)
