@@ -14,7 +14,7 @@
 1. **Install Dependencies**: `npm install` (takes ~20-30s)
 2. **Environment Setup**: Create `.env.local` with ALL required variables:
    ```bash
-   DATABASE_URL="file:./prisma/dev.db"
+   DATABASE_URL="file:./dev.db"
    NEXTAUTH_SECRET="development-secret-at-least-32-chars"
    NEXTAUTH_URL="http://localhost:3000"
    EMAIL_FROM="noreply@example.com"
