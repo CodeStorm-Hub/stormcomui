@@ -206,6 +206,79 @@ npx dotenv -e .env.local -- prisma migrate dev --schema=prisma/schema.sqlite.pri
 4. Test locally with `npm run dev` and verify changes in browser
 5. Use `#mcp_next-devtools_browser_eval` to capture console errors after UI changes
 
+## Next.js DevTools MCP Usage
+
+When `next-devtools-mcp` server is available, follow this workflow for Next.js 16 development:
+
+### 1. Start Dev Server First
+Always start the dev server before using Next DevTools MCP:
+```bash
+npm run dev
+```
+Wait until fully started (no errors, available at dev URL).
+
+### 2. Initialize Once Per Session
+After dev server is running, call `init` tool from `next-devtools-mcp` **once** at session start:
+- Do NOT call `init` repeatedly while dev server is running and MCP is working
+- After `init`, treat older Next.js training data as outdated
+- Use `nextjs_docs` tool for ALL Next.js concepts
+
+**When to call `init` again**: Only if dev server was restarted AND MCP appears to be failing.
+
+### 3. Documentation-First with nextjs_docs
+For any Next.js question (routing, data fetching, caching, Server/Client Components, auth, config):
+- Use `nextjs_docs` to `search` for docs, then `get` full content
+- Base all explanations and code changes on returned documentation
+- Avoid answering from memory when `nextjs_docs` is available
+
+### 4. Runtime Diagnostics with nextjs_runtime
+When dev server is running, use `nextjs_runtime` to inspect actual runtime state:
+- `discover_servers` → Find active Next.js dev server
+- `list_tools` → See available runtime tools
+- `call_tool` → Invoke runtime tools:
+  - `get_errors` → Build/runtime/type errors
+  - `get_logs` → Dev server logs
+  - `get_page_metadata` → Routes and component metadata
+  - `get_project_metadata` → Project structure and dev URL
+  - `get_server_action_by_id` → Locate Server Actions in codebase
+
+Before major refactors or debugging, inspect routes, errors, and logs with `nextjs_runtime`.
+
+### 5. Browser Verification with browser_eval
+If Playwright MCP is available via `next-devtools-mcp`, use `browser_eval` to:
+- Open app in real browser at dev URL (`http://localhost:3000`)
+- Navigate flows, click buttons, fill forms, capture console messages
+- Take screenshots to validate visual changes
+
+Use `nextjs_runtime` for internal diagnostics; `browser_eval` for end-to-end UX verification and visual/hydration checks.
+
+### 6. Upgrades with upgrade_nextjs_16
+When planning Next.js 16 upgrade:
+- Use `upgrade_nextjs_16` **tool** to run codemods, generate guidance, surface breaking changes
+- Use `upgrade-nextjs-16` **prompt** (if available) to structure migration plan
+- After changes: verify with `nextjs_docs`, `nextjs_runtime` (`get_errors`, `get_logs`), and tests
+
+### 7. Cache Components with enable_cache_components
+When enabling Cache Components:
+- Use `enable_cache_components` **tool** for readiness checks, config, automated error detection
+- Use `enable-cache-components` **prompt** for phased migration flow
+- Use Cache Components **resources** via MCP for deeper understanding:
+  - `cache-components://overview`
+  - `cache-components://core-mechanics`
+  - `cache-components://request-apis`
+  - `cache-components://cache-invalidation`
+  - `cache-components://error-patterns`
+
+Combine with `nextjs_docs` and `nextjs_runtime` for safe, concrete changes.
+
+### 8. Authoritative Resources
+For migration and fundamentals, use MCP resources as authoritative:
+- `nextjs16://migration/beta-to-stable` → Breaking changes
+- `nextjs16://migration/examples` → Recommended patterns
+- `nextjs-fundamentals://use-client` → Client component decisions
+
+Treat these resources plus `nextjs_docs` as **authoritative** for Next.js behavior in this repository.
+
 ## Final Notes
 - **Trust These Instructions**: Search codebase only if information is incomplete or contradicts reality.
 - **Minimal Changes**: Make smallest possible edits to achieve task goals.
