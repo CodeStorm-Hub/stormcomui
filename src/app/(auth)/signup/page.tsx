@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,11 +20,13 @@ export default function SignupPage() {
   // Password signup with server action
   const [state, action, isPending] = useActionState(signup, undefined);
 
-  // Redirect on successful password signup
-  if (state?.success) {
-    toast.success("Account created! Please sign in.");
-    router.push("/login");
-  }
+  // Redirect on successful password signup (moved to useEffect to avoid setState during render)
+  useEffect(() => {
+    if (state?.success) {
+      toast.success("Account created! Please sign in.");
+      router.push("/login");
+    }
+  }, [state?.success, router]);
 
   // Magic link signup
   async function handleMagicLinkSignup(e: React.FormEvent<HTMLFormElement>) {

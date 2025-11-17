@@ -5,6 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { IconPlus, IconFolder, IconClock, IconUsers } from "@tabler/icons-react";
 import { Badge } from "@/components/ui/badge";
+import { AppSidebar } from "@/components/app-sidebar";
+import { SiteHeader } from "@/components/site-header";
+import {
+  SidebarInset,
+  SidebarProvider,
+} from "@/components/ui/sidebar";
 
 export const metadata = {
   title: "Projects",
@@ -46,71 +52,90 @@ export default async function ProjectsPage() {
   }
 
   return (
-    <div className="container max-w-7xl py-8">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
-          <p className="text-muted-foreground">
-            Create and manage your projects and workspaces.
-          </p>
-        </div>
-        <Button className="gap-2">
-          <IconPlus className="size-4" />
-          New Project
-        </Button>
-      </div>
+    <SidebarProvider
+      style={
+        {
+          "--sidebar-width": "calc(var(--spacing) * 72)",
+          "--header-height": "calc(var(--spacing) * 12)",
+        } as React.CSSProperties
+      }
+    >
+      <AppSidebar variant="inset" />
+      <SidebarInset>
+        <SiteHeader />
+        <div className="flex flex-1 flex-col">
+          <div className="@container/main flex flex-1 flex-col gap-2">
+            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+              <div className="px-4 lg:px-6">
+                <div className="mb-8 flex items-center justify-between">
+                  <div>
+                    <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
+                    <p className="text-muted-foreground">
+                      Create and manage your projects and workspaces.
+                    </p>
+                  </div>
+                  <Button className="gap-2">
+                    <IconPlus className="size-4" />
+                    New Project
+                  </Button>
+                </div>
 
-      {projects.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <IconFolder className="size-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-semibold">No projects yet</h3>
-            <p className="mt-2 text-center text-sm text-muted-foreground">
-              Get started by creating your first project.
-            </p>
-            <Button className="mt-6 gap-2">
-              <IconPlus className="size-4" />
-              Create Project
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {projects.map((project) => (
-            <Card key={project.id} className="transition-colors hover:bg-accent/50">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <IconFolder className="size-10 text-primary" />
-                  <Badge
-                    variant={project.status === "active" ? "default" : "secondary"}
-                  >
-                    {project.status}
-                  </Badge>
-                </div>
-                <CardTitle className="mt-4">{project.name}</CardTitle>
-                <CardDescription>{project.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <IconUsers className="size-4" />
-                    <span>{project.members}</span>
+                {projects.length === 0 ? (
+                  <Card>
+                    <CardContent className="flex flex-col items-center justify-center py-16">
+                      <IconFolder className="size-12 text-muted-foreground" />
+                      <h3 className="mt-4 text-lg font-semibold">No projects yet</h3>
+                      <p className="mt-2 text-center text-sm text-muted-foreground">
+                        Get started by creating your first project.
+                      </p>
+                      <Button className="mt-6 gap-2">
+                        <IconPlus className="size-4" />
+                        Create Project
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {projects.map((project) => (
+                      <Card key={project.id} className="transition-colors hover:bg-accent/50">
+                        <CardHeader>
+                          <div className="flex items-start justify-between">
+                            <IconFolder className="size-10 text-primary" />
+                            <Badge
+                              variant={project.status === "active" ? "default" : "secondary"}
+                            >
+                              {project.status}
+                            </Badge>
+                          </div>
+                          <CardTitle className="mt-4">{project.name}</CardTitle>
+                          <CardDescription>{project.description}</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <IconUsers className="size-4" />
+                              <span>{project.members}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <IconClock className="size-4" />
+                              <span>
+                                {project.updatedAt.toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
-                  <div className="flex items-center gap-1">
-                    <IconClock className="size-4" />
-                    <span>
-                      {project.updatedAt.toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                )}
+              </div>
+            </div>
+          </div>
         </div>
-      )}
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

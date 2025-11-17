@@ -9,6 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { AppSidebar } from "@/components/app-sidebar";
+import { SiteHeader } from "@/components/site-header";
+import {
+  SidebarInset,
+  SidebarProvider,
+} from "@/components/ui/sidebar";
 
 export const metadata = {
   title: "Settings",
@@ -29,15 +35,29 @@ export default async function SettingsPage() {
     .toUpperCase() || "U";
 
   return (
-    <div className="container max-w-6xl py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">
-          Manage your account settings and preferences.
-        </p>
-      </div>
+    <SidebarProvider
+      style={
+        {
+          "--sidebar-width": "calc(var(--spacing) * 72)",
+          "--header-height": "calc(var(--spacing) * 12)",
+        } as React.CSSProperties
+      }
+    >
+      <AppSidebar variant="inset" />
+      <SidebarInset>
+        <SiteHeader />
+        <div className="flex flex-1 flex-col">
+          <div className="@container/main flex flex-1 flex-col gap-2">
+            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+              <div className="px-4 lg:px-6">
+                <div className="mb-8">
+                  <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+                  <p className="text-muted-foreground">
+                    Manage your account settings and preferences.
+                  </p>
+                </div>
 
-      <Tabs defaultValue="profile" className="space-y-8">
+                <Tabs defaultValue="profile" className="space-y-8">
         <TabsList>
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="account">Account</TabsTrigger>
@@ -204,8 +224,13 @@ export default async function SettingsPage() {
               </p>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+          </div>
+        </div>
+      </div>
+    </SidebarInset>
+  </SidebarProvider>
   );
 }
