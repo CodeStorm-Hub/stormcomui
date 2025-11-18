@@ -9,13 +9,13 @@
 
 Tracking migration of 75+ APIs from stormcom-old to stormcom-ui.
 
-### Migration Progress: 5/75 APIs (6.7%)
+### Migration Progress: 16/75 APIs (21.3%)
 
 ---
 
 ## API Implementation Matrix
 
-### ✅ Fully Implemented APIs (5)
+### ✅ Fully Implemented APIs (16)
 
 | Endpoint | Method | Status | Notes |
 |----------|--------|--------|-------|
@@ -24,22 +24,31 @@ Tracking migration of 75+ APIs from stormcom-old to stormcom-ui.
 | `/api/products` | POST | ✅ Working | Create product |
 | `/api/organizations` | GET | ✅ Working | Multi-tenant organizations |
 | `/api/organizations` | POST | ✅ Working | Create organization |
+| `/api/categories` | GET | ✅ Working | List categories with tree support |
+| `/api/categories` | POST | ✅ Working | Create category |
+| `/api/categories/tree` | GET | ✅ Working | Hierarchical category tree |
+| `/api/categories/[slug]` | GET | ✅ Working | Get category by slug (parameter fix applied) |
+| `/api/categories/[slug]` | PATCH | ✅ Working | Update category |
+| `/api/categories/[slug]` | DELETE | ✅ Working | Delete category |
+| `/api/brands` | GET | ✅ Working | List brands |
+| `/api/brands` | POST | ✅ Working | Create brand |
+| `/api/brands/[slug]` | GET | ✅ Working | Get brand by slug (parameter fix applied) |
+| `/api/brands/[slug]` | PATCH | ✅ Working | Update brand |
+| `/api/brands/[slug]` | DELETE | ✅ Working | Delete brand |
 
 ---
 
-### 🔧 Partially Implemented APIs (4)
+### 🔧 Partially Implemented APIs (2)
 
 | Endpoint | Method | Status | Issue |
 |----------|--------|--------|-------|
 | `/api/products/[id]` | GET | 🔧 Broken | Returns 404 for existing products |
 | `/api/products/[id]` | PATCH | 🔧 Untested | API exists but not tested |
 | `/api/products/[id]` | DELETE | 🔧 No UI | API exists but no UI integration |
-| `/api/categories` | ALL | 🔧 Untested | Exists but needs verification |
-| `/api/brands` | ALL | 🔧 Untested | Exists but needs verification |
 
 ---
 
-### ❌ Not Implemented APIs (66)
+### ❌ Not Implemented APIs (57)
 
 #### Priority 1: Core E-commerce (8 APIs)
 

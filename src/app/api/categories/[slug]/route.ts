@@ -25,7 +25,7 @@ export async function GET(
     }
 
     const categoryService = CategoryService.getInstance();
-    const category = await categoryService.getCategoryBySlug(storeId, params.slug);
+    const category = await categoryService.getCategoryBySlug(params.slug, storeId);
 
     if (!category) {
       return NextResponse.json({ error: 'Category not found' }, { status: 404 });

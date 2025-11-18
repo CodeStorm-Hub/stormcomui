@@ -25,7 +25,7 @@ export async function GET(
     }
 
     const brandService = BrandService.getInstance();
-    const brand = await brandService.getBrandBySlug(storeId, params.slug);
+    const brand = await brandService.getBrandBySlug(params.slug, storeId);
 
     if (!brand) {
       return NextResponse.json({ error: 'Brand not found' }, { status: 404 });
