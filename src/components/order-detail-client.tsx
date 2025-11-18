@@ -99,13 +99,13 @@ interface OrderDetailClientProps {
 // Status badge colors
 const statusColors: Record<string, string> = {
   PENDING: 'bg-yellow-500/10 text-yellow-500',
-  CONFIRMED: 'bg-blue-500/10 text-blue-500',
+  PAYMENT_FAILED: 'bg-red-500/10 text-red-500',
+  PAID: 'bg-green-500/10 text-green-500',
   PROCESSING: 'bg-purple-500/10 text-purple-500',
   SHIPPED: 'bg-indigo-500/10 text-indigo-500',
-  DELIVERED: 'bg-green-500/10 text-green-500',
-  CANCELLED: 'bg-red-500/10 text-red-500',
+  DELIVERED: 'bg-green-600/10 text-green-600',
+  CANCELED: 'bg-gray-500/10 text-gray-500',
   REFUNDED: 'bg-orange-500/10 text-orange-500',
-  RETURNED: 'bg-gray-500/10 text-gray-500',
 };
 
 const paymentStatusColors: Record<string, string> = {
@@ -458,13 +458,13 @@ export function OrderDetailClient({ orderId, storeId }: OrderDetailClientProps) 
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="PENDING">Pending</SelectItem>
-                    <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+                    <SelectItem value="PAYMENT_FAILED">Payment Failed</SelectItem>
+                    <SelectItem value="PAID">Paid</SelectItem>
                     <SelectItem value="PROCESSING">Processing</SelectItem>
                     <SelectItem value="SHIPPED">Shipped</SelectItem>
                     <SelectItem value="DELIVERED">Delivered</SelectItem>
-                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                    <SelectItem value="CANCELED">Canceled</SelectItem>
                     <SelectItem value="REFUNDED">Refunded</SelectItem>
-                    <SelectItem value="RETURNED">Returned</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

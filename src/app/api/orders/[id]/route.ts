@@ -80,9 +80,10 @@ export async function PATCH(
       );
     }
 
-    if (!body.newStatus) {
+    // newStatus is optional for tracking-only updates
+    if (!body.newStatus && !body.trackingNumber && !body.trackingUrl) {
       return NextResponse.json(
-        { error: 'newStatus is required' },
+        { error: 'Either newStatus, trackingNumber, or trackingUrl must be provided' },
         { status: 400 }
       );
     }

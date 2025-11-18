@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { CategoryService } from '@/lib/services/category.service';
+import { getCurrentStoreId } from '@/lib/get-current-user';
 import { z } from 'zod';
 
 // GET /api/categories - List categories
@@ -15,22 +16,33 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const storeId = searchParams.get('storeId');
-    
+    const storeId = await getCurrentStoreId();
     if (!storeId) {
-      return NextResponse.json({ error: 'storeId is required' }, { status: 400 });
+      return NextResponse.json({ error: 'No store found for user' }, { status: 400 });
     }
 
+    const { searchParams } = new URL(request.url);
     const categoryService = CategoryService.getInstance();
-    const categories = await categoryService.getCategories(storeId, {
-      isPublished: searchParams.get('isPublished') === 'true' ? true 
-                  : searchParams.get('isPublished') === 'false' ? false 
-                  : undefined,
-      parentId: searchParams.get('parentId') || undefined,
-    });
+    
+    const page = parseInt(searchParams.get('page') || '1');
+    const perPage = parseInt(searchParams.get('perPage') || '50');
+    
+    const result = await categoryService.getCategories(
+      storeId,
+      {
+        search: searchParams.get('search') || undefined,
+        isPublished: searchParams.get('isPublished') === 'true' ? true 
+                    : searchParams.get('isPublished') === 'false' ? false 
+                    : undefined,
+        parentId: searchParams.get('parentId') || undefined,
+        sortBy: (searchParams.get('sortBy') as any) || 'sortOrder',
+        sortOrder: (searchParams.get('sortOrder') as any) || 'asc',
+      },
+      page,
+      perPage
+    );
 
-    return NextResponse.json({ categories });
+    return NextResponse.json(result);
   } catch (error) {
     console.error('GET /api/categories error:', error);
     return NextResponse.json({ error: 'Failed to fetch categories' }, { status: 500 });
@@ -45,14 +57,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
-    
-    if (!body.storeId) {
-      return NextResponse.json({ error: 'storeId is required' }, { status: 400 });
+    const storeId = await getCurrentStoreId();
+    if (!storeId) {
+      return NextResponse.json({ error: 'No store found for user' }, { status: 400 });
     }
 
+    const body = await request.json();
     const categoryService = CategoryService.getInstance();
-    const category = await categoryService.createCategory(body.storeId, body);
+    const category = await categoryService.createCategory(storeId, body);
 
     return NextResponse.json(category, { status: 201 });
   } catch (error) {

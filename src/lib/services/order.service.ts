@@ -24,7 +24,7 @@ export type OrderListParams = {
 export type OrderUpdateStatusParams = {
   orderId: string;
   storeId: string;
-  newStatus: OrderStatus;
+  newStatus?: OrderStatus;
   trackingNumber?: string;
   trackingUrl?: string;
   adminNote?: string;
@@ -104,16 +104,22 @@ export class OrderService {
 
   /**
    * Validate order status transitions
+   * Allows most transitions except backwards progression or invalid jumps
    */
   private isValidStatusTransition(currentStatus: OrderStatus, newStatus: OrderStatus): boolean {
+    // Allow staying in same status (for tracking updates)
+    if (currentStatus === newStatus) {
+      return true;
+    }
+
     const validTransitions: Record<OrderStatus, OrderStatus[]> = {
-      PENDING: [OrderStatus.PAID, OrderStatus.PAYMENT_FAILED, OrderStatus.CANCELED],
-      PAYMENT_FAILED: [OrderStatus.PAID, OrderStatus.CANCELED],
-      PAID: [OrderStatus.PROCESSING, OrderStatus.CANCELED, OrderStatus.REFUNDED],
-      PROCESSING: [OrderStatus.SHIPPED, OrderStatus.CANCELED, OrderStatus.REFUNDED],
-      SHIPPED: [OrderStatus.DELIVERED, OrderStatus.CANCELED],
+      PENDING: [OrderStatus.PAID, OrderStatus.PAYMENT_FAILED, OrderStatus.PROCESSING, OrderStatus.CANCELED],
+      PAYMENT_FAILED: [OrderStatus.PENDING, OrderStatus.PAID, OrderStatus.CANCELED],
+      PAID: [OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.CANCELED, OrderStatus.REFUNDED],
+      PROCESSING: [OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.CANCELED, OrderStatus.REFUNDED],
+      SHIPPED: [OrderStatus.DELIVERED, OrderStatus.CANCELED, OrderStatus.REFUNDED],
       DELIVERED: [OrderStatus.REFUNDED],
-      CANCELED: [], // Terminal state
+      CANCELED: [OrderStatus.PENDING, OrderStatus.REFUNDED], // Allow reactivation
       REFUNDED: [], // Terminal state
     };
 
@@ -335,8 +341,8 @@ export class OrderService {
       throw new Error('Order not found');
     }
 
-    // Validate status transition
-    if (!this.isValidStatusTransition(order.status, newStatus)) {
+    // Validate status transition if newStatus is provided
+    if (newStatus && !this.isValidStatusTransition(order.status, newStatus)) {
       throw new Error(
         `Invalid status transition from ${order.status} to ${newStatus}`
       );
@@ -344,26 +350,32 @@ export class OrderService {
 
     // Build update data
     const updateData: Prisma.OrderUpdateInput = {
-      status: newStatus,
       updatedAt: new Date(),
     };
 
+    // Update status if provided
+    if (newStatus) {
+      updateData.status = newStatus;
+    }
+
     // Add tracking info if provided
-    if (trackingNumber) {
+    if (trackingNumber !== undefined) {
       updateData.trackingNumber = trackingNumber;
     }
-    if (trackingUrl) {
+    if (trackingUrl !== undefined) {
       updateData.trackingUrl = trackingUrl;
     }
-    if (adminNote) {
+    if (adminNote !== undefined) {
       updateData.adminNote = adminNote;
     }
 
-    // Update order-specific timestamps and statuses
-    if (newStatus === OrderStatus.DELIVERED) {
-      updateData.fulfilledAt = new Date();
-    } else if (newStatus === OrderStatus.CANCELED) {
-      updateData.canceledAt = new Date();
+    // Update order-specific timestamps and statuses (only if status is changing)
+    if (newStatus && newStatus !== order.status) {
+      if (newStatus === OrderStatus.DELIVERED) {
+        updateData.fulfilledAt = new Date();
+      } else if (newStatus === OrderStatus.CANCELED) {
+        updateData.canceledAt = new Date();
+      }
     }
 
     // Update order
