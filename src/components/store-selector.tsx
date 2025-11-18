@@ -38,10 +38,10 @@ export function StoreSelector({ onStoreChange }: StoreSelectorProps) {
   useEffect(() => {
     async function fetchStores() {
       try {
-        // For now, create a mock store
+        // For now, create a mock store with valid CUID format
         // In production, this would fetch from /api/stores
         const mockStore: Store = {
-          id: 'store-1',
+          id: 'clqm1j4k00000l8dw8z8r8z8r', // Valid CUID format
           name: 'Demo Store',
           slug: 'demo-store',
         };
