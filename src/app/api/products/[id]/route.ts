@@ -37,7 +37,7 @@ export async function GET(
     }
 
     const productService = ProductService.getInstance();
-    const product = await productService.getProductById(storeId, params.id);
+    const product = await productService.getProductById(params.id, storeId);
 
     if (!product) {
       return NextResponse.json(
@@ -82,8 +82,8 @@ export async function PATCH(
 
     const productService = ProductService.getInstance();
     const product = await productService.updateProduct(
-      body.storeId,
       params.id,
+      body.storeId,
       body
     );
 
