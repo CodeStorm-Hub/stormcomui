@@ -31,7 +31,7 @@ export default async function BrandDetailPage({
   }
 
   const brandService = BrandService.getInstance();
-  const brand = await brandService.getBrandBySlug(storeId, params.slug);
+  const brand = await brandService.getBrandBySlug(params.slug, storeId);
 
   if (!brand) {
     redirect('/dashboard/brands');

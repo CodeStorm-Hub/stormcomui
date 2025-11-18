@@ -31,7 +31,7 @@ export default async function CategoryDetailPage({
   }
 
   const categoryService = CategoryService.getInstance();
-  const category = await categoryService.getCategoryBySlug(storeId, params.slug);
+  const category = await categoryService.getCategoryBySlug(params.slug, storeId);
 
   if (!category) {
     redirect('/dashboard/categories');
