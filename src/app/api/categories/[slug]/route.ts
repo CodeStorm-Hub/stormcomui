@@ -11,7 +11,7 @@ import { z } from 'zod';
 // GET /api/categories/[slug] - Get category by slug
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -24,8 +24,9 @@ export async function GET(
       return NextResponse.json({ error: 'No store found for user' }, { status: 400 });
     }
 
+    const { slug } = await params;
     const categoryService = CategoryService.getInstance();
-    const category = await categoryService.getCategoryBySlug(params.slug, storeId);
+    const category = await categoryService.getCategoryBySlug(slug, storeId);
 
     if (!category) {
       return NextResponse.json({ error: 'Category not found' }, { status: 404 });
@@ -33,7 +34,7 @@ export async function GET(
 
     return NextResponse.json(category);
   } catch (error) {
-    console.error(`GET /api/categories/${params.slug} error:`, error);
+    console.error(`GET /api/categories/[slug] error:`, error);
     return NextResponse.json({ error: 'Failed to fetch category' }, { status: 500 });
   }
 }
@@ -41,7 +42,7 @@ export async function GET(
 // PATCH /api/categories/[slug] - Update category
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -54,11 +55,12 @@ export async function PATCH(
       return NextResponse.json({ error: 'No store found for user' }, { status: 400 });
     }
 
+    const { slug } = await params;
     const body = await request.json();
     const categoryService = CategoryService.getInstance();
 
     // Resolve category by slug first to obtain its ID (service expects ID)
-    const existing = await categoryService.getCategoryBySlug(params.slug, storeId);
+    const existing = await categoryService.getCategoryBySlug(slug, storeId);
     if (!existing) {
       return NextResponse.json({ error: 'Category not found' }, { status: 404 });
     }
@@ -71,7 +73,7 @@ export async function PATCH(
 
     return NextResponse.json(updated);
   } catch (error) {
-    console.error(`PATCH /api/categories/${params.slug} error:`, error);
+    console.error(`PATCH /api/categories/[slug] error:`, error);
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -91,7 +93,7 @@ export async function PATCH(
 // DELETE /api/categories/[slug] - Delete category
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -104,12 +106,13 @@ export async function DELETE(
       return NextResponse.json({ error: 'No store found for user' }, { status: 400 });
     }
 
+    const { slug } = await params;
     const { searchParams } = new URL(request.url);
     const force = searchParams.get('force') === 'true';
 
     const categoryService = CategoryService.getInstance();
     // Resolve category by slug to get ID, then delete accordingly
-    const existing = await categoryService.getCategoryBySlug(params.slug, storeId);
+    const existing = await categoryService.getCategoryBySlug(slug, storeId);
     if (!existing) {
       return NextResponse.json({ error: 'Category not found' }, { status: 404 });
     }
@@ -122,7 +125,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error(`DELETE /api/categories/${params.slug} error:`, error);
+    console.error(`DELETE /api/categories/[slug] error:`, error);
     
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });

@@ -1,19 +1,50 @@
 ﻿{
     "summary":  {
-                    "totalErrors":  0,
-                    "exitCode":  0,
-                    "timestamp":  "2025-11-18T04:21:54Z",
+                    "totalErrors":  2,
+                    "exitCode":  1,
+                    "timestamp":  "2025-11-19T20:02:45Z",
                     "command":  "npm run type-check",
                     "totalWarnings":  0,
-                    "totalLines":  4
+                    "totalLines":  18
                 },
     "rawOutput":  [
                       "",
                       "\u003e stormcom@0.1.0 type-check",
                       "\u003e tsc --noEmit --incremental",
-                      ""
+                      "",
+                      ".next/dev/types/validator.ts(252,31): error TS2344: Type \u0027typeof import(\"F:/codestorm/codestorm/stormcom-ui/stormcom/src/app/api/brands/[slug]/route\")\u0027 does not satisfy the constraint \u0027RouteHandlerConfig\u003c\"/api/brands/[slug]\"\u003e\u0027.",
+                      "  Types of property \u0027GET\u0027 are incompatible.",
+                      "    Type \u0027(request: NextRequest, { params }: { params: { slug: string; }; }) =\u003e Promise\u003cNextResponse\u003cBrandWithRelations\u003e | NextResponse\u003c{ error: string; }\u003e\u003e\u0027 is not assignable to type \u0027(request: NextRequest, context: { params: Promise\u003c{ slug: string; }\u003e; }) =\u003e void | Response | Promise\u003cvoid | Response\u003e\u0027.",
+                      "      Types of parameters \u0027__1\u0027 and \u0027context\u0027 are incompatible.",
+                      "        Type \u0027{ params: Promise\u003c{ slug: string; }\u003e; }\u0027 is not assignable to type \u0027{ params: { slug: string; }; }\u0027.",
+                      "          Types of property \u0027params\u0027 are incompatible.",
+                      "            Property \u0027slug\u0027 is missing in type \u0027Promise\u003c{ slug: string; }\u003e\u0027 but required in type \u0027{ slug: string; }\u0027.",
+                      ".next/dev/types/validator.ts(270,31): error TS2344: Type \u0027typeof import(\"F:/codestorm/codestorm/stormcom-ui/stormcom/src/app/api/categories/[slug]/route\")\u0027 does not satisfy the constraint \u0027RouteHandlerConfig\u003c\"/api/categories/[slug]\"\u003e\u0027.",
+                      "  Types of property \u0027GET\u0027 are incompatible.",
+                      "    Type \u0027(request: NextRequest, { params }: { params: { slug: string; }; }) =\u003e Promise\u003cNextResponse\u003cCategoryWithRelations\u003e | NextResponse\u003c{ error: string; }\u003e\u003e\u0027 is not assignable to type \u0027(request: NextRequest, context: { params: Promise\u003c{ slug: string; }\u003e; }) =\u003e void | Response | Promise\u003cvoid | Response\u003e\u0027.",
+                      "      Types of parameters \u0027__1\u0027 and \u0027context\u0027 are incompatible.",
+                      "        Type \u0027{ params: Promise\u003c{ slug: string; }\u003e; }\u0027 is not assignable to type \u0027{ params: { slug: string; }; }\u0027.",
+                      "          Types of property \u0027params\u0027 are incompatible.",
+                      "            Property \u0027slug\u0027 is missing in type \u0027Promise\u003c{ slug: string; }\u003e\u0027 but required in type \u0027{ slug: string; }\u0027."
                   ],
     "errors":  [
-
+                   {
+                       "fullText":  ".next/dev/types/validator.ts(252,31): error TS2344: Type \u0027typeof import(\"F:/codestorm/codestorm/stormcom-ui/stormcom/src/app/api/brands/[slug]/route\")\u0027 does not satisfy the constraint \u0027RouteHandlerConfig\u003c\"/api/brands/[slug]\"\u003e\u0027.",
+                       "file":  ".next/dev/types/validator.ts",
+                       "code":  "TS2344",
+                       "line":  252,
+                       "severity":  "error",
+                       "message":  "Type \u0027typeof import(\"F:/codestorm/codestorm/stormcom-ui/stormcom/src/app/api/brands/[slug]/route\")\u0027 does not satisfy the constraint \u0027RouteHandlerConfig\u003c\"/api/brands/[slug]\"\u003e\u0027. Types of property \u0027GET\u0027 are incompatible. Type \u0027(request: NextRequest, { params }: { params: { slug: string; }; }) =\u003e Promise\u003cNextResponse\u003cBrandWithRelations\u003e | NextResponse\u003c{ error: string; }\u003e\u003e\u0027 is not assignable to type \u0027(request: NextRequest, context: { params: Promise\u003c{ slug: string; }\u003e; }) =\u003e void | Response | Promise\u003cvoid | Response\u003e\u0027. Types of parameters \u0027__1\u0027 and \u0027context\u0027 are incompatible. Type \u0027{ params: Promise\u003c{ slug: string; }\u003e; }\u0027 is not assignable to type \u0027{ params: { slug: string; }; }\u0027. Types of property \u0027params\u0027 are incompatible. Property \u0027slug\u0027 is missing in type \u0027Promise\u003c{ slug: string; }\u003e\u0027 but required in type \u0027{ slug: string; }\u0027.",
+                       "column":  31
+                   },
+                   {
+                       "fullText":  ".next/dev/types/validator.ts(270,31): error TS2344: Type \u0027typeof import(\"F:/codestorm/codestorm/stormcom-ui/stormcom/src/app/api/categories/[slug]/route\")\u0027 does not satisfy the constraint \u0027RouteHandlerConfig\u003c\"/api/categories/[slug]\"\u003e\u0027.",
+                       "file":  ".next/dev/types/validator.ts",
+                       "code":  "TS2344",
+                       "line":  270,
+                       "severity":  "error",
+                       "message":  "Type \u0027typeof import(\"F:/codestorm/codestorm/stormcom-ui/stormcom/src/app/api/categories/[slug]/route\")\u0027 does not satisfy the constraint \u0027RouteHandlerConfig\u003c\"/api/categories/[slug]\"\u003e\u0027. Types of property \u0027GET\u0027 are incompatible. Type \u0027(request: NextRequest, { params }: { params: { slug: string; }; }) =\u003e Promise\u003cNextResponse\u003cCategoryWithRelations\u003e | NextResponse\u003c{ error: string; }\u003e\u003e\u0027 is not assignable to type \u0027(request: NextRequest, context: { params: Promise\u003c{ slug: string; }\u003e; }) =\u003e void | Response | Promise\u003cvoid | Response\u003e\u0027. Types of parameters \u0027__1\u0027 and \u0027context\u0027 are incompatible. Type \u0027{ params: Promise\u003c{ slug: string; }\u003e; }\u0027 is not assignable to type \u0027{ params: { slug: string; }; }\u0027. Types of property \u0027params\u0027 are incompatible. Property \u0027slug\u0027 is missing in type \u0027Promise\u003c{ slug: string; }\u003e\u0027 but required in type \u0027{ slug: string; }\u0027.",
+                       "column":  31
+                   }
                ]
 }

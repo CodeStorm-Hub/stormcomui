@@ -278,7 +278,7 @@ export class CategoryService {
     let currentCategoryId: string | null = categoryId;
 
     while (currentCategoryId) {
-      const category: any = await prisma.category.findFirst({
+      const category = await prisma.category.findFirst({
         where: {
           id: currentCategoryId,
           storeId,
@@ -532,10 +532,10 @@ export class CategoryService {
     const order = sortOrder === 'desc' ? 'desc' : 'asc';
 
     if (field === 'sortOrder') {
-      return [{ sortOrder: order }, { name: 'asc' }] as any;
+      return [{ sortOrder: order }, { name: 'asc' }] as Prisma.CategoryOrderByWithRelationInput[];
     }
 
-    return { [field]: order } as any;
+    return { [field]: order } as Prisma.CategoryOrderByWithRelationInput;
   }
 
   /**

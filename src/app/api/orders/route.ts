@@ -53,8 +53,17 @@ export async function GET(request: NextRequest) {
     const orderService = OrderService.getInstance();
     const result = await orderService.listOrders(queryParams);
 
+    // Transform orders to include customer name and email
+    const transformedOrders = result.orders.map((order) => ({
+      ...order,
+      customerName: order.customer
+        ? `${order.customer.firstName} ${order.customer.lastName}`.trim()
+        : 'Guest',
+      customerEmail: order.customer?.email || 'N/A',
+    }));
+
     return NextResponse.json({
-      orders: result.orders,
+      orders: transformedOrders,
       pagination: result.pagination,
     });
   } catch (error) {

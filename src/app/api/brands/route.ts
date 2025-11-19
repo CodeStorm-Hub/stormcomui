@@ -33,8 +33,8 @@ export async function GET(request: NextRequest) {
         isPublished: searchParams.get('isPublished') === 'true' ? true 
                     : searchParams.get('isPublished') === 'false' ? false 
                     : undefined,
-        sortBy: (searchParams.get('sortBy') as any) || 'name',
-        sortOrder: (searchParams.get('sortOrder') as any) || 'asc',
+        sortBy: (searchParams.get('sortBy') as 'name' | 'createdAt' | 'updatedAt' | undefined) || 'name',
+        sortOrder: (searchParams.get('sortOrder') as 'asc' | 'desc' | undefined) || 'asc',
       },
       page,
       perPage

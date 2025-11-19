@@ -23,8 +23,8 @@ export default function OnboardingPage() {
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
               <div className="px-4 lg:px-6">
                 <div className="mx-auto max-w-2xl">
-                  <h1 className="text-2xl font-semibold">Welcome! Let's set up your workspace</h1>
-                  <p className="mt-2 text-muted-foreground">This is a placeholder onboarding page. We'll guide new users to create an organization and invite teammates.</p>
+                  <h1 className="text-2xl font-semibold">Welcome! Let&apos;s set up your workspace</h1>
+                  <p className="mt-2 text-muted-foreground">This is a placeholder onboarding page. We&apos;ll guide new users to create an organization and invite teammates.</p>
                 </div>
               </div>
             </div>

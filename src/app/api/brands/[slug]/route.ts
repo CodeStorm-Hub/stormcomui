@@ -11,7 +11,7 @@ import { z } from 'zod';
 // GET /api/brands/[slug] - Get brand by slug
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -24,8 +24,9 @@ export async function GET(
       return NextResponse.json({ error: 'No store found for user' }, { status: 400 });
     }
 
+    const { slug } = await params;
     const brandService = BrandService.getInstance();
-    const brand = await brandService.getBrandBySlug(params.slug, storeId);
+    const brand = await brandService.getBrandBySlug(slug, storeId);
 
     if (!brand) {
       return NextResponse.json({ error: 'Brand not found' }, { status: 404 });
@@ -33,7 +34,7 @@ export async function GET(
 
     return NextResponse.json(brand);
   } catch (error) {
-    console.error(`GET /api/brands/${params.slug} error:`, error);
+    console.error(`GET /api/brands/[slug] error:`, error);
     return NextResponse.json({ error: 'Failed to fetch brand' }, { status: 500 });
   }
 }
@@ -41,7 +42,7 @@ export async function GET(
 // PATCH /api/brands/[slug] - Update brand
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -54,11 +55,12 @@ export async function PATCH(
       return NextResponse.json({ error: 'No store found for user' }, { status: 400 });
     }
 
+    const { slug } = await params;
     const body = await request.json();
     const brandService = BrandService.getInstance();
 
     // Resolve brand by slug to obtain ID (service expects ID)
-    const existing = await brandService.getBrandBySlug(params.slug, storeId);
+    const existing = await brandService.getBrandBySlug(slug, storeId);
     if (!existing) {
       return NextResponse.json({ error: 'Brand not found' }, { status: 404 });
     }
@@ -71,7 +73,7 @@ export async function PATCH(
 
     return NextResponse.json(updated);
   } catch (error) {
-    console.error(`PATCH /api/brands/${params.slug} error:`, error);
+    console.error(`PATCH /api/brands/[slug] error:`, error);
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -91,7 +93,7 @@ export async function PATCH(
 // DELETE /api/brands/[slug] - Delete brand
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -104,12 +106,13 @@ export async function DELETE(
       return NextResponse.json({ error: 'No store found for user' }, { status: 400 });
     }
 
+    const { slug } = await params;
     // Support optional force delete similar to categories
     const { searchParams } = new URL(request.url);
     const force = searchParams.get('force') === 'true';
 
     const brandService = BrandService.getInstance();
-    const existing = await brandService.getBrandBySlug(params.slug, storeId);
+    const existing = await brandService.getBrandBySlug(slug, storeId);
     if (!existing) {
       return NextResponse.json({ error: 'Brand not found' }, { status: 404 });
     }
@@ -122,7 +125,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error(`DELETE /api/brands/${params.slug} error:`, error);
+    console.error(`DELETE /api/brands/[slug] error:`, error);
     
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });

@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { IconSearch, IconChevronRight, IconEdit, IconTrash } from '@tabler/icons-react';
+import { IconSearch, IconEdit, IconTrash } from '@tabler/icons-react';
 import Link from 'next/link';
 
 interface Category {

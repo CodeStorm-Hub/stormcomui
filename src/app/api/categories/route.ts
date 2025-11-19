@@ -35,8 +35,8 @@ export async function GET(request: NextRequest) {
                     : searchParams.get('isPublished') === 'false' ? false 
                     : undefined,
         parentId: searchParams.get('parentId') || undefined,
-        sortBy: (searchParams.get('sortBy') as any) || 'sortOrder',
-        sortOrder: (searchParams.get('sortOrder') as any) || 'asc',
+        sortBy: (searchParams.get('sortBy') as 'name' | 'sortOrder' | 'createdAt' | 'updatedAt' | undefined) || 'sortOrder',
+        sortOrder: (searchParams.get('sortOrder') as 'asc' | 'desc' | undefined) || 'asc',
       },
       page,
       perPage

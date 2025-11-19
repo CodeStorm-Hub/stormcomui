@@ -481,7 +481,7 @@ export class ProductService {
     }
 
     // Prepare update data
-    const updateData: any = {
+    const updateData: Prisma.ProductUpdateInput = {
       ...validatedData,
       inventoryStatus,
     };
@@ -818,10 +818,10 @@ export class ProductService {
    * Normalize product fields from database format to application format
    * Parses JSON strings for images and metaKeywords
    */
-  private normalizeProductFields(product: any) {
+  private normalizeProductFields(product: ProductWithRelations | null): ProductWithRelations | null {
     if (!product) return product;
 
-    const p: any = { ...product };
+    const p = { ...product } as Record<string, unknown>;
 
     // Normalize images: JSON string -> string[]
     try {
