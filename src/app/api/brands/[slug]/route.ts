@@ -56,10 +56,16 @@ export async function PATCH(
 
     const body = await request.json();
     const brandService = BrandService.getInstance();
-    
+
+    // Resolve brand by slug to obtain ID (service expects ID)
+    const existing = await brandService.getBrandBySlug(params.slug, storeId);
+    if (!existing) {
+      return NextResponse.json({ error: 'Brand not found' }, { status: 404 });
+    }
+
     const updated = await brandService.updateBrand(
+      existing.id,
       storeId,
-      params.slug,
       body
     );
 
@@ -98,8 +104,21 @@ export async function DELETE(
       return NextResponse.json({ error: 'No store found for user' }, { status: 400 });
     }
 
+    // Support optional force delete similar to categories
+    const { searchParams } = new URL(request.url);
+    const force = searchParams.get('force') === 'true';
+
     const brandService = BrandService.getInstance();
-    await brandService.deleteBrand(storeId, params.slug);
+    const existing = await brandService.getBrandBySlug(params.slug, storeId);
+    if (!existing) {
+      return NextResponse.json({ error: 'Brand not found' }, { status: 404 });
+    }
+
+    if (force) {
+      await brandService.permanentlyDeleteBrand(existing.id, storeId);
+    } else {
+      await brandService.deleteBrand(existing.id, storeId);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

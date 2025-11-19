@@ -56,10 +56,16 @@ export async function PATCH(
 
     const body = await request.json();
     const categoryService = CategoryService.getInstance();
-    
+
+    // Resolve category by slug first to obtain its ID (service expects ID)
+    const existing = await categoryService.getCategoryBySlug(params.slug, storeId);
+    if (!existing) {
+      return NextResponse.json({ error: 'Category not found' }, { status: 404 });
+    }
+
     const updated = await categoryService.updateCategory(
+      existing.id,
       storeId,
-      params.slug,
       body
     );
 
@@ -102,7 +108,17 @@ export async function DELETE(
     const force = searchParams.get('force') === 'true';
 
     const categoryService = CategoryService.getInstance();
-    await categoryService.deleteCategory(storeId, params.slug, { force });
+    // Resolve category by slug to get ID, then delete accordingly
+    const existing = await categoryService.getCategoryBySlug(params.slug, storeId);
+    if (!existing) {
+      return NextResponse.json({ error: 'Category not found' }, { status: 404 });
+    }
+
+    if (force) {
+      await categoryService.permanentlyDeleteCategory(existing.id, storeId);
+    } else {
+      await categoryService.deleteCategory(existing.id, storeId);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
