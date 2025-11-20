@@ -3,19 +3,21 @@
 
 import * as React from 'react';
 import { AttributeForm } from '@/components/attribute-form';
+import { StoreSelector } from '@/components/store-selector';
 import { toast } from 'sonner';
 
 interface AttributeEditClientProps {
   id: string;
-  storeId: string;
 }
 
-export function AttributeEditClient({ id, storeId }: AttributeEditClientProps) {
+export function AttributeEditClient({ id }: AttributeEditClientProps) {
+  const [storeId, setStoreId] = React.useState<string>('');
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [data, setData] = React.useState<{ name: string; values: string[] } | null>(null);
 
   React.useEffect(() => {
+    if (!storeId) return;
     let active = true;
     (async () => {
       try {
@@ -37,20 +39,32 @@ export function AttributeEditClient({ id, storeId }: AttributeEditClientProps) {
       }
     })();
     return () => { active = false; };
-  }, [id]);
-
-  if (loading) {
-    return <p className="text-muted-foreground">Loading attribute...</p>;
-  }
-  if (error || !data) {
-    return <p className="text-red-600">{error ?? 'Attribute not found'}</p>;
-  }
+  }, [id, storeId]);
 
   return (
-    <AttributeForm
-      attributeId={id}
-      initialData={data}
-      storeId={storeId}
-    />
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <label className="text-sm font-medium">Store:</label>
+        <StoreSelector onStoreChange={setStoreId} />
+      </div>
+
+      {!storeId ? (
+        <div className="rounded-lg border bg-card p-12 text-center">
+          <p className="text-sm text-muted-foreground">
+            Select a store to edit the attribute
+          </p>
+        </div>
+      ) : loading ? (
+        <p className="text-muted-foreground">Loading attribute...</p>
+      ) : error || !data ? (
+        <p className="text-red-600">{error ?? 'Attribute not found'}</p>
+      ) : (
+        <AttributeForm
+          attributeId={id}
+          initialData={data}
+          storeId={storeId}
+        />
+      )}
+    </div>
   );
 }

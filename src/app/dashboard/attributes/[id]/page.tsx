@@ -2,17 +2,14 @@
 // Edit Attribute Page
 
 import { getServerSession } from 'next-auth/next';
-import { redirect, notFound } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
-import { AttributeForm } from '@/components/attribute-form';
 import { AttributeEditClient } from '@/components/attribute-edit-client';
 
 export const metadata = {
   title: 'Edit Attribute | Dashboard | StormCom',
   description: 'Edit product attribute',
 };
-
-// No SSR data fetching to avoid Prisma runtime constraints; client layer will fetch
 
 export default async function EditAttributePage({
   params,
@@ -27,8 +24,6 @@ export default async function EditAttributePage({
 
   const { id } = await params;
 
-  const storeId = 'clqm1j4k00000l8dw8z8r8z8r';
-
   return (
     <div className="flex flex-col gap-4 p-4 md:p-6">
       <div>
@@ -38,7 +33,7 @@ export default async function EditAttributePage({
         </p>
       </div>
 
-      <AttributeEditClient id={id} storeId={storeId} />
+      <AttributeEditClient id={id} />
     </div>
   );
 }

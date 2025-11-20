@@ -5,7 +5,7 @@ import { Suspense } from 'react';
 import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
-import { AttributesTable } from '@/components/attributes-table';
+import { AttributesPageClient } from '@/components/attributes-page-client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export const metadata = {
@@ -19,9 +19,6 @@ export default async function AttributesPage() {
   if (!session) {
     redirect('/login');
   }
-
-  // Use demo store ID for now
-  const storeId = 'clqm1j4k00000l8dw8z8r8z8r';
 
   return (
     <div className="flex flex-col gap-4 p-4 md:p-6">
@@ -41,7 +38,7 @@ export default async function AttributesPage() {
         </CardHeader>
         <CardContent>
           <Suspense fallback={<div>Loading...</div>}>
-            <AttributesTable storeId={storeId} />
+            <AttributesPageClient />
           </Suspense>
         </CardContent>
       </Card>

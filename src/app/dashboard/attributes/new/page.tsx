@@ -4,7 +4,7 @@
 import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
-import { AttributeForm } from '@/components/attribute-form';
+import { AttributeNewClient } from '@/components/attribute-new-client';
 
 export const metadata = {
   title: 'New Attribute | Dashboard | StormCom',
@@ -18,9 +18,6 @@ export default async function NewAttributePage() {
     redirect('/login');
   }
 
-  // Use demo store ID for now
-  const storeId = 'clqm1j4k00000l8dw8z8r8z8r';
-
   return (
     <div className="flex flex-col gap-4 p-4 md:p-6">
       <div>
@@ -30,7 +27,7 @@ export default async function NewAttributePage() {
         </p>
       </div>
 
-      <AttributeForm storeId={storeId} />
+      <AttributeNewClient />
     </div>
   );
 }

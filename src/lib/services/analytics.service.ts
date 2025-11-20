@@ -78,21 +78,19 @@ export class AnalyticsService {
     const previousTo = from;
 
     // Current period stats
-    const [currentRevenue, currentOrders, currentCustomers, currentProducts] = 
-      await Promise.all([
-        this.getRevenueTotal(storeId, from, to),
-        this.getOrdersCount(storeId, from, to),
-        this.getCustomersCount(storeId, from, to),
-        this.getProductsCount(storeId),
-      ]);
+    const [currentRevenue, currentOrders, currentCustomers, currentProducts] = await Promise.all([
+      this.getRevenueTotal(storeId, from, to),
+      this.getOrdersCount(storeId, from, to),
+      this.getCustomersCount(storeId, from, to),
+      this.getProductsCount(storeId),
+    ]);
 
     // Previous period stats for comparison
-    const [previousRevenue, previousOrders, previousCustomers] = 
-      await Promise.all([
-        this.getRevenueTotal(storeId, previousFrom, previousTo),
-        this.getOrdersCount(storeId, previousFrom, previousTo),
-        this.getCustomersCount(storeId, previousFrom, previousTo),
-      ]);
+    const [previousRevenue, previousOrders, previousCustomers] = await Promise.all([
+      this.getRevenueTotal(storeId, previousFrom, previousTo),
+      this.getOrdersCount(storeId, previousFrom, previousTo),
+      this.getCustomersCount(storeId, previousFrom, previousTo),
+    ]);
 
     return {
       revenue: {
