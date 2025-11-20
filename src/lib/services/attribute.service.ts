@@ -50,6 +50,7 @@ export class AttributeService {
    */
   async listAttributes(params: ListAttributesParams) {
     const {
+      storeId,
       search,
       sortBy = 'name',
       sortOrder = 'asc',
@@ -61,7 +62,9 @@ export class AttributeService {
     const take = Math.min(perPage, 100);
 
     // Build where clause (use Prisma input type for safe typings)
-    const where: Prisma.ProductAttributeWhereInput = {};
+    const where: Prisma.ProductAttributeWhereInput = {
+      storeId,
+    };
     if (search) {
       where.name = {
         contains: search,
@@ -109,21 +112,25 @@ export class AttributeService {
    * Create a new attribute
    */
   async createAttribute(params: CreateAttributeParams): Promise<AttributeWithValues> {
-    const { name, values = [] } = params;
+    const { name, storeId, values = [] } = params;
 
-    // Check if attribute with same name already exists
+    // Check if attribute with same name already exists in this store
     const existing = await prisma.productAttribute.findFirst({
-      where: { name },
+      where: { 
+        storeId,
+        name 
+      },
     });
 
     if (existing) {
-      throw new Error(`Attribute with name "${name}" already exists`);
+      throw new Error(`Attribute with name "${name}" already exists in this store`);
     }
 
     // Create attribute
     const attribute = await prisma.productAttribute.create({
       data: {
         name,
+        storeId,
         values: JSON.stringify(values),
       },
       include: {
@@ -184,10 +191,14 @@ export class AttributeService {
     // Check for duplicate name if updating name
     if (name && name !== existing.name) {
       const duplicate = await prisma.productAttribute.findFirst({
-        where: { name, id: { not: id } },
+        where: { 
+          storeId: existing.storeId,
+          name, 
+          id: { not: id } 
+        },
       });
       if (duplicate) {
-        throw new Error(`Attribute with name "${name}" already exists`);
+        throw new Error(`Attribute with name "${name}" already exists in this store`);
       }
     }
 

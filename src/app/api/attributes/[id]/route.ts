@@ -13,7 +13,7 @@ const updateAttributeSchema = z.object({
 });
 
 // GET /api/attributes/[id] - Get attribute by ID
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       );
     }
 
-    const id = params?.id ?? request.nextUrl.pathname.split('/').pop();
+    const { id } = await params;
     if (!id) {
       return NextResponse.json(
         { error: 'Invalid request: missing id' },
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     return NextResponse.json({ data: attribute });
   } catch (error: unknown) {
-    console.error(`GET /api/attributes/${params?.id} error:`, error);
+    console.error('GET /api/attributes/[id] error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch attribute', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // PATCH /api/attributes/[id] - Update attribute
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -66,7 +66,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const body = await request.json();
     const validatedData = updateAttributeSchema.parse(body);
 
-    const id = params?.id ?? request.nextUrl.pathname.split('/').pop();
+    const { id } = await params;
     if (!id) {
       return NextResponse.json(
         { error: 'Invalid request: missing id' },
@@ -85,7 +85,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       message: 'Attribute updated successfully',
     });
   } catch (error: unknown) {
-    console.error(`PATCH /api/attributes/${params?.id} error:`, error);
+    console.error('PATCH /api/attributes/[id] error:', error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -117,7 +117,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 }
 
 // DELETE /api/attributes/[id] - Delete attribute
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -127,7 +127,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       );
     }
 
-    const id = params?.id ?? request.nextUrl.pathname.split('/').pop();
+    const { id } = await params;
     if (!id) {
       return NextResponse.json(
         { error: 'Invalid request: missing id' },
@@ -142,7 +142,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       message: 'Attribute deleted successfully',
     });
   } catch (error: unknown) {
-    console.error(`DELETE /api/attributes/${params?.id} error:`, error);
+    console.error('DELETE /api/attributes/[id] error:', error);
 
     if (error instanceof Error) {
       if (error.message.includes('not found')) {

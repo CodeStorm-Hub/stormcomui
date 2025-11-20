@@ -9,7 +9,7 @@ import { z } from 'zod';
 
 // Validation schemas
 const listAttributesSchema = z.object({
-  storeId: z.string().optional(),
+  storeId: z.string().min(1, 'Store ID is required'),
   search: z.string().optional(),
   sortBy: z.enum(['name', 'createdAt', 'updatedAt']).optional(),
   sortOrder: z.enum(['asc', 'desc']).optional(),
@@ -47,14 +47,8 @@ export async function GET(request: NextRequest) {
     // Validate params
     const validatedParams = listAttributesSchema.parse(params);
 
-    // Default storeId to demo store if not provided
-    const storeId = validatedParams.storeId || 'clqm1j4k00000l8dw8z8r8z8r';
-
     const attributeService = AttributeService.getInstance();
-    const result = await attributeService.listAttributes({
-      ...validatedParams,
-      storeId,
-    });
+    const result = await attributeService.listAttributes(validatedParams);
 
     return NextResponse.json(result);
   } catch (error) {
