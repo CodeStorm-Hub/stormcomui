@@ -110,9 +110,28 @@ async function main() {
     
   } catch (error) {
     console.error('\n❌ Seeding failed:', error.message);
-    console.error('\nTroubleshooting:');
-    console.error('1. Verify DATABASE_URL is correct and database is accessible');
-    console.error('2. Ensure the database schema is up to date (run migrations first)');
+    
+    // Provide specific error guidance based on error type
+    if (error.message.includes('connect') || error.message.includes('ECONNREFUSED')) {
+      console.error('\n🔌 Database Connection Error:');
+      console.error('1. Verify DATABASE_URL is correct and database is accessible');
+      console.error('2. Check if the database server is running');
+      console.error('3. Verify network connectivity to the database');
+    } else if (error.message.includes('constraint') || error.message.includes('unique') || error.message.includes('foreign key')) {
+      console.error('\n⚠️  Data Constraint Error:');
+      console.error('1. Database may already contain data that conflicts with seed data');
+      console.error('2. Try clearing the database tables first');
+      console.error('3. Check for unique constraint violations in seed data');
+    } else if (error.message.includes('schema') || error.message.includes('relation')) {
+      console.error('\n📋 Schema Error:');
+      console.error('1. Ensure the database schema is up to date (run migrations first)');
+      console.error('2. Verify Prisma Client was generated correctly');
+      console.error('3. Check that all required tables exist');
+    } else {
+      console.error('\n🔍 General Troubleshooting:');
+      console.error('1. Verify DATABASE_URL is correct and database is accessible');
+      console.error('2. Ensure the database schema is up to date (run migrations first)');
+    }
     console.error('3. Check that the database user has proper permissions');
     console.error('4. Review the error message above for specific issues');
     process.exit(1);

@@ -28,6 +28,7 @@ if (!shouldSeed) {
   console.log('ℹ️  Database seeding skipped (SEED_DATABASE not set to "true")');
   console.log('   To enable seeding, set environment variable: SEED_DATABASE=true');
   console.log('   ⚠️  WARNING: Seeding will DELETE ALL EXISTING DATA');
+  console.log('ℹ️  Build will continue without seeding.');
   process.exit(0);
 }
 

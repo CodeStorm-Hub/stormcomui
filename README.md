@@ -109,7 +109,21 @@ npm run dev
 
 ### Optional: Seed Demo Data
 
-To populate your production database with demo data (⚠️ deletes existing data):
+**Option 1: Automatic Seeding During Deployment**
+
+To enable automatic seeding of demo data during Vercel deployment:
+
+1. Set `SEED_DATABASE=true` in Vercel environment variables (Project Settings → Environment Variables)
+2. Deploy or redeploy
+3. **Important**: Remove or set `SEED_DATABASE=false` after seeding to prevent accidental future seeding
+
+⚠️ **WARNING**: Seeding deletes all existing data. Only use on fresh databases.
+
+See [Production Seeding Guide](./docs/PRODUCTION_SEEDING.md) for detailed instructions.
+
+**Option 2: Manual Seeding**
+
+To populate your production database with demo data manually:
 
 ```bash
 vercel env pull .env.local

@@ -56,6 +56,7 @@ try {
     console.log('✅ Prisma migrations completed successfully');
   } catch (migrateError) {
     console.log('⚠️  Prisma migrate deploy failed or no migrations found');
+    console.error('   Error:', migrateError.message);
     console.log('   Attempting direct SQL migration...');
     
     // Step 3: If Prisma migrate fails, run our custom SQL migration
@@ -64,7 +65,12 @@ try {
     if (fs.existsSync(migrationPath)) {
       console.log('\n📄 Step 3: Running custom SQL migration...');
       
-      const tempSqlFile = path.join(__dirname, '..', 'temp-migration.sql');
+      // Use .tmp directory for temporary files (should be in .gitignore)
+      const tmpDir = path.join(__dirname, '..', '.tmp');
+      if (!fs.existsSync(tmpDir)) {
+        fs.mkdirSync(tmpDir, { recursive: true });
+      }
+      const tempSqlFile = path.join(tmpDir, `migration-${Date.now()}.sql`);
       
       try {
         const migrationSql = fs.readFileSync(migrationPath, 'utf8');
