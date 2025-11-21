@@ -131,9 +131,9 @@ async function main() {
       console.error('\n🔍 General Troubleshooting:');
       console.error('1. Verify DATABASE_URL is correct and database is accessible');
       console.error('2. Ensure the database schema is up to date (run migrations first)');
+      console.error('3. Check that the database user has proper permissions');
+      console.error('4. Review the error message above for specific issues');
     }
-    console.error('3. Check that the database user has proper permissions');
-    console.error('4. Review the error message above for specific issues');
     process.exit(1);
   }
 }
