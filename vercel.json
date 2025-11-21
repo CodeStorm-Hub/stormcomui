@@ -1,5 +1,5 @@
 {
-  "buildCommand": "node scripts/migrate-postgres.js && npm run build",
+  "buildCommand": "node scripts/migrate-postgres.js && node scripts/seed-production.js --force && npm run build",
   "outputDirectory": ".next",
   "framework": "nextjs",
   "installCommand": "npm install"
