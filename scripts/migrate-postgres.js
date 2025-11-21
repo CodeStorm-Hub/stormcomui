@@ -47,19 +47,39 @@ try {
 
   // Step 2: Run Prisma migrate deploy (if using Prisma migrations)
   console.log('\n🔄 Step 2: Running Prisma migrations...');
-  try {
-    // First, try to use Prisma's built-in migration system
-    execSync('npx prisma migrate deploy --schema=prisma/schema.postgres.prisma', {
-      stdio: 'inherit',
-      cwd: path.join(__dirname, '..'),
-    });
-    console.log('✅ Prisma migrations completed successfully');
-  } catch (migrateError) {
-    console.log('⚠️  Prisma migrate deploy failed or no migrations found');
-    console.error('   Error:', migrateError.message);
-    console.log('   Attempting direct SQL migration...');
-    
-    // Step 3: If Prisma migrate fails, run our custom SQL migration
+  
+  // Check if there's a migration_lock.toml and if it's for SQLite
+  const migrationLockPath = path.join(__dirname, '..', 'prisma', 'migrations', 'migration_lock.toml');
+  let skipPrismaMigrate = false;
+  
+  if (fs.existsSync(migrationLockPath)) {
+    const lockContent = fs.readFileSync(migrationLockPath, 'utf8');
+    if (lockContent.includes('provider = "sqlite"')) {
+      console.log('⚠️  Detected SQLite migrations in prisma/migrations directory');
+      console.log('   Skipping prisma migrate deploy (incompatible with PostgreSQL)');
+      console.log('   Will use custom PostgreSQL migration instead...');
+      skipPrismaMigrate = true;
+    }
+  }
+  
+  if (!skipPrismaMigrate) {
+    try {
+      // First, try to use Prisma's built-in migration system
+      execSync('npx prisma migrate deploy --schema=prisma/schema.postgres.prisma', {
+        stdio: 'inherit',
+        cwd: path.join(__dirname, '..'),
+      });
+      console.log('✅ Prisma migrations completed successfully');
+    } catch (migrateError) {
+      console.log('⚠️  Prisma migrate deploy failed or no migrations found');
+      console.error('   Error:', migrateError.message);
+      console.log('   Attempting direct SQL migration...');
+      skipPrismaMigrate = true;
+    }
+  }
+  
+  // Step 3: If Prisma migrate was skipped or failed, run our custom SQL migration
+  if (skipPrismaMigrate) {
     const migrationPath = path.join(__dirname, '..', 'prisma', 'migrations-postgres', 'init.sql');
     
     if (fs.existsSync(migrationPath)) {
@@ -96,8 +116,10 @@ try {
       }
     } else {
       console.log('⚠️  No custom migration file found at:', migrationPath);
+      console.log('   Database schema may not be created. Please check manually.');
     }
   }
+
 
   console.log('\n✅ Migration completed successfully!');
   console.log('   Your database is ready for production use.');
