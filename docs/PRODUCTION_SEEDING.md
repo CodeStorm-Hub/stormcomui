@@ -2,24 +2,53 @@
 
 This guide explains how to seed your production PostgreSQL database with demo data.
 
-## ⚠️ Important Warning
+## ⚠️ CRITICAL: Automatic Seeding Safety
 
-**Seeding will DELETE ALL EXISTING DATA in the database!**
+**Production seeding is now CONDITIONAL and SAFE by default.**
 
-This includes:
-- All users and accounts
-- All organizations and memberships
-- All projects and project members
-- All e-commerce data (stores, products, orders, customers, etc.)
+The build process includes a conditional seeding step that **ONLY runs if you explicitly enable it**. This prevents accidental data loss.
 
-Only run this on:
-- ✅ Fresh/empty databases
-- ✅ Development/staging environments
-- ❌ **NEVER on production with real user data**
+### How It Works
 
-## Quick Start
+1. **By Default**: Seeding is SKIPPED during Vercel deployments
+2. **To Enable**: Set `SEED_DATABASE=true` in Vercel environment variables
+3. **After Seeding**: Remove the variable to prevent future accidental seeding
 
-### Option 1: Using Vercel CLI (Recommended for Vercel Postgres)
+This ensures you never accidentally delete production data.
+
+## Quick Start (Safe Conditional Seeding)
+
+### Automatic Seeding During Vercel Deployment
+
+**Step 1: Enable Seeding (One-Time)**
+
+In your Vercel project settings:
+1. Go to **Settings** → **Environment Variables**
+2. Add new variable:
+   - **Name**: `SEED_DATABASE`
+   - **Value**: `true`
+   - **Environment**: Production (or Preview for testing)
+3. Save the variable
+
+**Step 2: Deploy**
+
+Push your code or trigger a redeploy. The build process will:
+- Run migrations
+- **Seed the database** (because `SEED_DATABASE=true`)
+- Build the application
+
+**Step 3: Disable Auto-Seeding (Important!)**
+
+After successful seeding:
+1. Go back to **Settings** → **Environment Variables**
+2. Either:
+   - Delete the `SEED_DATABASE` variable, OR
+   - Change its value to `false`
+3. Save
+
+**Future deployments will NOT seed the database**, protecting your data.
+
+### Manual Seeding (Direct)
 
 ```bash
 # 1. Install Vercel CLI if not already installed
