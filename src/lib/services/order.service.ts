@@ -422,4 +422,130 @@ export class OrderService {
       },
     });
   }
+
+  /**
+   * Cancel order and restore inventory
+   */
+  async cancelOrder(orderId: string, storeId: string, reason?: string): Promise<any> {
+    const order = await prisma.order.findFirst({
+      where: {
+        id: orderId,
+        storeId,
+        deletedAt: null,
+      },
+      include: {
+        items: true,
+      },
+    });
+
+    if (!order) {
+      throw new Error('Order not found');
+    }
+
+    // Only allow cancellation of certain statuses
+    const cancellableStatuses: OrderStatus[] = [OrderStatus.PENDING, OrderStatus.PROCESSING, OrderStatus.PAID];
+    if (!cancellableStatuses.includes(order.status as OrderStatus)) {
+      throw new Error(`Cannot cancel order in ${order.status} status`);
+    }
+
+    // Update order status
+    await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        status: OrderStatus.CANCELED,
+        canceledAt: new Date(),
+        adminNote: reason || 'Order canceled',
+      },
+    });
+
+    // Restore inventory for each item
+    const { InventoryService } = await import('./inventory.service');
+    const inventoryService = InventoryService.getInstance();
+
+    const items = order.items
+      .filter(item => item.productId !== null)
+      .map(item => ({
+        productId: item.productId!,
+        quantity: item.quantity
+      }));
+
+    if (items.length > 0) {
+      await inventoryService.restoreStock(
+        storeId,
+        items,
+        orderId,
+        'Cancellation'
+      );
+    }
+
+    return this.getOrderById(orderId, storeId);
+  }
+
+  /**
+   * Refund order and restore inventory
+   */
+  async refundOrder(
+    orderId: string,
+    storeId: string,
+    refundAmount?: number,
+    reason?: string
+  ): Promise<any> {
+    const order = await prisma.order.findFirst({
+      where: {
+        id: orderId,
+        storeId,
+        deletedAt: null,
+      },
+      include: {
+        items: true,
+      },
+    });
+
+    if (!order) {
+      throw new Error('Order not found');
+    }
+
+    // Only allow refund of completed or shipped orders
+    const refundableStatuses: OrderStatus[] = [OrderStatus.DELIVERED, OrderStatus.SHIPPED];
+    if (!refundableStatuses.includes(order.status as OrderStatus)) {
+      throw new Error(`Cannot refund order in ${order.status} status`);
+    }
+
+    const actualRefundAmount = refundAmount || order.totalAmount;
+
+    // Update order
+    await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        status: OrderStatus.REFUNDED,
+        paymentStatus: PaymentStatus.REFUNDED,
+        adminNote: reason || `Refunded ${actualRefundAmount}`,
+      },
+    });
+
+    // Restore inventory for each item
+    const { InventoryService } = await import('./inventory.service');
+    const inventoryService = InventoryService.getInstance();
+
+    const items = order.items
+      .filter(item => item.productId !== null)
+      .map(item => ({
+        productId: item.productId!,
+        quantity: item.quantity
+      }));
+
+    if (items.length > 0) {
+      await inventoryService.restoreStock(
+        storeId,
+        items,
+        orderId,
+        'Refund'
+      );
+    }
+
+    // TODO: Process actual refund with payment gateway
+    // This would integrate with Stripe, PayPal, etc.
+
+    return this.getOrderById(orderId, storeId);
+  }
 }

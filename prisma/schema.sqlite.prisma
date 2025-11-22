@@ -23,6 +23,8 @@ model User {
   memberships   Membership[]
   projectMembers ProjectMember[]
   customer      Customer?     // E-commerce customer profile
+  inventoryLogs InventoryLog[] @relation("InventoryUserLogs")
+  auditLogs     AuditLog[]     @relation("AuditUserLogs")
 
   accounts      Account[]
   sessions      Session[]
@@ -252,6 +254,7 @@ model Store {
   orders         Order[]
   customers      Customer[]
   attributes     ProductAttribute[]
+  auditLogs      AuditLog[]
   
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -309,6 +312,7 @@ model Product {
   orderItems  OrderItem[]
   attributes  ProductAttributeValue[]
   reviews     Review[]
+  inventoryLogs InventoryLog[] @relation("InventoryLogs")
   
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -584,4 +588,55 @@ model Review {
   @@index([storeId, productId])
   @@index([productId, isApproved, createdAt])
   @@index([customerId, createdAt])
+}
+
+// Inventory log model (for audit trail)
+model InventoryLog {
+  id          String   @id @default(cuid())
+  storeId     String
+  productId   String
+  product     Product  @relation("InventoryLogs", fields: [productId], references: [id], onDelete: Cascade)
+  
+  previousQty Int
+  newQty      Int
+  changeQty   Int
+  reason      String
+  note        String?
+  
+  userId      String?
+  user        User?    @relation("InventoryUserLogs", fields: [userId], references: [id], onDelete: SetNull)
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([storeId, productId, createdAt])
+  @@index([productId, createdAt])
+  @@index([userId, createdAt])
+}
+
+// Audit log model (for tracking all system actions)
+model AuditLog {
+  id        String   @id @default(cuid())
+  storeId   String?
+  store     Store?   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  userId    String?
+  user      User?    @relation("AuditUserLogs", fields: [userId], references: [id], onDelete: SetNull)
+
+  action    String   // e.g., "CREATE", "UPDATE", "DELETE"
+  entityType String  // e.g., "Product", "Order", "User"
+  entityId  String
+  
+  // Change tracking
+  changes   String?  // JSON { "field": { "old": "value", "new": "value" } }
+  
+  // Request metadata
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  @@index([storeId, createdAt])
+  @@index([userId, createdAt])
+  @@index([entityType, entityId, createdAt])
+  @@map("audit_logs")
 }
