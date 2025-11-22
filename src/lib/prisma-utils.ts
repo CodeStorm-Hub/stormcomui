@@ -6,18 +6,24 @@
  * Detects the database provider from DATABASE_URL
  * @returns 'postgresql' | 'sqlite' | 'unknown'
  */
+let cachedProvider: 'postgresql' | 'sqlite' | 'unknown' | null = null;
+
 export function getDatabaseProvider(): 'postgresql' | 'sqlite' | 'unknown' {
+  if (cachedProvider !== null) {
+    return cachedProvider;
+  }
+
   const databaseUrl = process.env.DATABASE_URL || '';
   
   if (databaseUrl.startsWith('postgresql://') || databaseUrl.startsWith('postgres://')) {
-    return 'postgresql';
+    cachedProvider = 'postgresql';
+  } else if (databaseUrl.startsWith('file:') || databaseUrl.includes('sqlite')) {
+    cachedProvider = 'sqlite';
+  } else {
+    cachedProvider = 'unknown';
   }
   
-  if (databaseUrl.startsWith('file:') || databaseUrl.includes('sqlite')) {
-    return 'sqlite';
-  }
-  
-  return 'unknown';
+  return cachedProvider;
 }
 
 /**
