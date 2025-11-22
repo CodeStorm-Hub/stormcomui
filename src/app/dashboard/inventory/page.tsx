@@ -165,7 +165,7 @@ export default function InventoryPage() {
         );
       case 'LOW_STOCK':
         return (
-          <Badge variant="warning" className="flex items-center gap-1 bg-yellow-500">
+          <Badge variant="outline" className="flex items-center gap-1 bg-yellow-500 text-white border-yellow-600">
             <AlertTriangle className="h-3 w-3" />
             Low Stock
           </Badge>
@@ -345,7 +345,7 @@ export default function InventoryPage() {
 
             <div className="space-y-2">
               <Label>Adjustment Type</Label>
-              <Select value={adjustmentType} onValueChange={(v) => setAdjustmentType(v as any)}>
+              <Select value={adjustmentType} onValueChange={(v) => setAdjustmentType(v as 'ADD' | 'REMOVE' | 'SET')}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

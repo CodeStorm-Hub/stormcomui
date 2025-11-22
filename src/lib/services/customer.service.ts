@@ -8,6 +8,7 @@
  */
 
 import { prisma } from '@/lib/prisma';
+import { caseInsensitiveStringFilter } from '@/lib/prisma-utils';
 import type { Customer, Prisma } from '@prisma/client';
 
 /**
@@ -189,10 +190,10 @@ export class CustomerService {
 
     if (search) {
       where.OR = [
-        { email: { contains: search, mode: 'insensitive' } },
-        { firstName: { contains: search, mode: 'insensitive' } },
-        { lastName: { contains: search, mode: 'insensitive' } },
-        { phone: { contains: search, mode: 'insensitive' } },
+        { email: caseInsensitiveStringFilter(search) },
+        { firstName: caseInsensitiveStringFilter(search) },
+        { lastName: caseInsensitiveStringFilter(search) },
+        { phone: caseInsensitiveStringFilter(search) },
       ];
     }
 
@@ -201,11 +202,17 @@ export class CustomerService {
     }
 
     if (minTotalSpent !== undefined) {
-      where.totalSpent = { ...where.totalSpent, gte: minTotalSpent };
+      where.totalSpent = {
+        ...(typeof where.totalSpent === 'object' ? where.totalSpent : {}),
+        gte: minTotalSpent,
+      };
     }
 
     if (maxTotalSpent !== undefined) {
-      where.totalSpent = { ...where.totalSpent, lte: maxTotalSpent };
+      where.totalSpent = {
+        ...(typeof where.totalSpent === 'object' ? where.totalSpent : {}),
+        lte: maxTotalSpent,
+      };
     }
 
     if (minTotalOrders !== undefined) {
@@ -316,7 +323,7 @@ export class CustomerService {
       include: {
         orders: {
           where: {
-            status: { notIn: ['CANCELLED'] },
+            status: { notIn: ['CANCELED'] },
           },
         },
       },
@@ -327,11 +334,11 @@ export class CustomerService {
     }
 
     const totalOrders = customer.orders.length;
-    const totalSpent = customer.orders.reduce((sum, order) => sum + order.totalAmount, 0);
+    const totalSpent = customer.orders.reduce((sum: number, order: { totalAmount: number }) => sum + order.totalAmount, 0);
     const averageOrderValue = totalOrders > 0 ? totalSpent / totalOrders : 0;
     const lastOrderAt =
       totalOrders > 0
-        ? customer.orders.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0].createdAt
+        ? customer.orders.sort((a: { createdAt: Date }, b: { createdAt: Date }) => b.createdAt.getTime() - a.createdAt.getTime())[0].createdAt
         : null;
 
     await prisma.customer.update({
