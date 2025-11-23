@@ -68,7 +68,7 @@ export function InventoryPageClient() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [lowStockOnly, setLowStockOnly] = useState(false);
-  const [selectedStore, setSelectedStore] = useState<string>('');
+  const [selectedStore] = useState<string>(''); // setSelectedStore removed - not yet implemented
   const [adjustDialogOpen, setAdjustDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [adjustmentType, setAdjustmentType] = useState<'ADD' | 'REMOVE' | 'SET'>('ADD');

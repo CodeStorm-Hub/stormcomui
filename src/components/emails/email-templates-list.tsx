@@ -19,7 +19,7 @@ import {
 import { MoreHorizontal, Mail, Edit, Eye, Send } from 'lucide-react';
 import { EditEmailTemplateDialog } from './edit-email-template-dialog';
 import { PreviewEmailDialog } from './preview-email-dialog';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface EmailTemplate {
   id: string;
@@ -83,21 +83,14 @@ export function EmailTemplatesList() {
   const [templates] = useState<EmailTemplate[]>(mockTemplates);
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
   const [previewTemplate, setPreviewTemplate] = useState<EmailTemplate | null>(null);
-  const { toast } = useToast();
 
   const handleSendTest = (template: EmailTemplate) => {
-    toast({
-      title: 'Test email sent',
-      description: `Test email for "${template.name}" sent to your email address.`,
-    });
+    toast.success(`Test email for "${template.name}" sent to your email address.`);
   };
 
   const handleToggleActive = (template: EmailTemplate) => {
     const newStatus = !template.active;
-    toast({
-      title: newStatus ? 'Template activated' : 'Template deactivated',
-      description: `"${template.name}" is now ${newStatus ? 'active' : 'inactive'}.`,
-    });
+    toast.success(`"${template.name}" is now ${newStatus ? 'active' : 'inactive'}.`);
   };
 
   return (

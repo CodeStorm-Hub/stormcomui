@@ -12,7 +12,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Bell, Package, ShoppingCart, Users, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface Notification {
   id: string;
@@ -107,7 +107,6 @@ const getPriorityColor = (priority: string) => {
 
 export function NotificationsList() {
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
-  const { toast } = useToast();
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -115,26 +114,17 @@ export function NotificationsList() {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
-    toast({
-      title: 'Marked as read',
-      description: 'Notification marked as read.',
-    });
+    toast.success('Notification marked as read.');
   };
 
   const handleMarkAllAsRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    toast({
-      title: 'All notifications read',
-      description: 'All notifications have been marked as read.',
-    });
+    toast.success('All notifications have been marked as read.');
   };
 
   const handleClearAll = () => {
     setNotifications([]);
-    toast({
-      title: 'Notifications cleared',
-      description: 'All notifications have been removed.',
-    });
+    toast.success('All notifications have been removed.');
   };
 
   const getRelativeTime = (dateString: string) => {
