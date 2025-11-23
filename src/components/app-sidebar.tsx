@@ -72,17 +72,70 @@ const data = {
           title: "Attributes",
           url: "/dashboard/attributes",
         },
+        {
+          title: "Inventory",
+          url: "/dashboard/inventory",
+        },
+        {
+          title: "Reviews",
+          url: "/dashboard/reviews",
+        },
       ],
     },
     {
       title: "Orders",
       url: "/dashboard/orders",
       icon: IconListDetails,
+      items: [
+        {
+          title: "All Orders",
+          url: "/dashboard/orders",
+        },
+        {
+          title: "Cart",
+          url: "/dashboard/cart",
+        },
+      ],
+    },
+    {
+      title: "Customers",
+      url: "/dashboard/customers",
+      icon: IconUsers,
     },
     {
       title: "Analytics",
-      url: "/dashboard",
+      url: "/dashboard/analytics",
       icon: IconChartBar,
+    },
+    {
+      title: "Stores",
+      url: "/dashboard/stores",
+      icon: IconDatabase,
+      items: [
+        {
+          title: "All Stores",
+          url: "/dashboard/stores",
+        },
+        {
+          title: "Subscriptions",
+          url: "/dashboard/subscriptions",
+        },
+      ],
+    },
+    {
+      title: "Marketing",
+      url: "#",
+      icon: IconReport,
+      items: [
+        {
+          title: "Coupons",
+          url: "/dashboard/coupons",
+        },
+        {
+          title: "Emails",
+          url: "/dashboard/emails",
+        },
+      ],
     },
     {
       title: "Projects",
@@ -147,6 +200,26 @@ const data = {
     {
       title: "Settings",
       url: "/settings",
+      icon: IconSettings,
+    },
+    {
+      title: "Notifications",
+      url: "/dashboard/notifications",
+      icon: IconReport,
+    },
+    {
+      title: "Webhooks",
+      url: "/dashboard/webhooks",
+      icon: IconInnerShadowTop,
+    },
+    {
+      title: "Integrations",
+      url: "/dashboard/integrations",
+      icon: IconDatabase,
+    },
+    {
+      title: "Admin",
+      url: "/dashboard/admin",
       icon: IconSettings,
     },
     {

@@ -1,3 +1,47 @@
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
+import { redirect } from 'next/navigation';
+import { AppSidebar } from "@/components/app-sidebar";
+import { SiteHeader } from "@/components/site-header";
+import {
+  SidebarInset,
+  SidebarProvider,
+} from "@/components/ui/sidebar";
+
+export const metadata = {
+  title: 'Inventory | Dashboard | StormCom',
+  description: 'Manage product inventory',
+};
+
+export default async function InventoryPage() {
+  const session = await getServerSession(authOptions);
+  
+  if (!session?.user) {
+    redirect('/login');
+  }
+
+  return (
+    <SidebarProvider
+      style={{
+        "--sidebar-width": "calc(var(--spacing) * 72)",
+        "--header-height": "calc(var(--spacing) * 12)",
+      } as React.CSSProperties}
+    >
+      <AppSidebar variant="inset" />
+      <SidebarInset>
+        <SiteHeader />
+        <div className="flex flex-1 flex-col">
+          <div className="@container/main flex flex-1 flex-col gap-2">
+            <InventoryPageClient />
+          </div>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
+  );
+}
+
+// Client Component Implementation
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -62,7 +106,7 @@ interface InventoryMeta {
   totalPages: number;
 }
 
-export default function InventoryPage() {
+export function InventoryPageClient() {
   const { data: session } = useSession();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [meta, setMeta] = useState<InventoryMeta | null>(null);
