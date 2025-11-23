@@ -25,9 +25,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
-    const userId = searchParams.get('userId') || '';
-    const action = searchParams.get('action') || '';
-    const resource = searchParams.get('resource') || '';
+    // const userId = searchParams.get('userId') || '';
+    // const action = searchParams.get('action') || '';
+    // const resource = searchParams.get('resource') || '';
 
     // Mock activity logs - In production, fetch from database/log system
     const activities = Array.from({ length: limit }, (_, i) => {

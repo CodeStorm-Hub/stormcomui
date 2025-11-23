@@ -45,7 +45,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const [shippingAddress, setShippingAddress] = useState<ShippingAddress | null>(null);
-  const [paymentMethodId, setPaymentMethodId] = useState<string | null>(null);
+  // const [paymentMethodId, setPaymentMethodId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
   const steps: CheckoutStep[] = [

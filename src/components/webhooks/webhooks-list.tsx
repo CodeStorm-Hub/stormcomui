@@ -139,8 +139,12 @@ export function WebhooksList() {
   };
 
   const copySecret = (secret: string) => {
-    navigator.clipboard.writeText(secret);
-    toast.success('Secret copied to clipboard');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(secret);
+      toast.success('Secret copied to clipboard');
+    } else {
+      toast.error('Clipboard not available');
+    }
   };
 
   if (loading) {

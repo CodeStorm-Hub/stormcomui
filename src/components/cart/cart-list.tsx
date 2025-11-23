@@ -13,7 +13,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Minus, Plus, Trash2, ShoppingCart, ArrowRight } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
 interface CartItem {
@@ -67,7 +67,6 @@ export function CartList() {
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState(true);
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
-  const { toast } = useToast();
   const router = useRouter();
 
   useEffect(() => {
@@ -121,15 +120,9 @@ export function CartList() {
         };
       });
 
-      toast({
-        title: 'Cart updated',
-        description: 'Item quantity updated successfully',
-      });
+      toast.success('Item quantity updated successfully');
     } catch {
-      toast({
-        title: 'Update failed',
-        description: 'Failed to update item quantity',
-      });
+      toast.error('Failed to update item quantity');
     } finally {
       setUpdatingItems(prev => {
         const next = new Set(prev);
@@ -158,15 +151,9 @@ export function CartList() {
         };
       });
 
-      toast({
-        title: 'Item removed',
-        description: 'Item removed from cart',
-      });
+      toast.success('Item removed from cart');
     } catch {
-      toast({
-        title: 'Remove failed',
-        description: 'Failed to remove item from cart',
-      });
+      toast.error('Failed to remove item from cart');
     } finally {
       setUpdatingItems(prev => {
         const next = new Set(prev);
@@ -188,15 +175,9 @@ export function CartList() {
 
       setCart({ ...mockCart, items: [], itemCount: 0, subtotal: 0, total: 0 });
 
-      toast({
-        title: 'Cart cleared',
-        description: 'All items removed from cart',
-      });
+      toast.success('All items removed from cart');
     } catch {
-      toast({
-        title: 'Clear failed',
-        description: 'Failed to clear cart',
-      });
+      toast.error('Failed to clear cart');
     }
   };
 

@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { CheckCircle2, Clock, AlertTriangle, Calendar, CreditCard } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface Subscription {
   id: string;
@@ -95,7 +95,6 @@ export function SubscriptionsList() {
   const [loading, setLoading] = useState(true);
   const [selectedSub, setSelectedSub] = useState<Subscription | null>(null);
   const [canceling, setCanceling] = useState(false);
-  const { toast } = useToast();
 
   useEffect(() => {
     const fetchSubscriptions = async () => {
@@ -133,10 +132,7 @@ export function SubscriptionsList() {
 
       if (!response.ok) throw new Error('Failed to cancel');
 
-      toast({
-        title: 'Subscription canceled',
-        description: 'Your subscription will end at the current period.',
-      });
+      toast.success('Your subscription will end at the current period.');
 
       setSubscriptions(prev =>
         prev.map(sub =>
@@ -146,10 +142,7 @@ export function SubscriptionsList() {
         )
       );
     } catch {
-      toast({
-        title: 'Cancellation failed',
-        description: 'Unable to cancel subscription. Please try again.',
-      });
+      toast.error('Unable to cancel subscription. Please try again.');
     } finally {
       setCanceling(false);
     }

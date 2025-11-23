@@ -25,7 +25,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Plus, MoreHorizontal, Copy, Edit, Trash2, Percent, DollarSign } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { CreateCouponDialog } from './create-coupon-dialog';
 
 interface Coupon {
@@ -87,7 +87,6 @@ export function CouponsList() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const { toast } = useToast();
 
   useEffect(() => {
     const fetchCoupons = async () => {
@@ -111,20 +110,18 @@ export function CouponsList() {
   }, []);
 
   const handleCopyCode = (code: string) => {
-    navigator.clipboard.writeText(code);
-    toast({
-      title: 'Code copied',
-      description: `Coupon code "${code}" copied to clipboard`,
-    });
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code);
+      toast.success(`Coupon code "${code}" copied to clipboard`);
+    } else {
+      toast.error('Clipboard not available');
+    }
   };
 
   const handleDelete = async (couponId: string) => {
     if (!confirm('Are you sure you want to delete this coupon?')) return;
 
-    toast({
-      title: 'Coupon deleted',
-      description: 'The coupon has been removed',
-    });
+    toast.success('The coupon has been removed');
 
     setCoupons(prev => prev.filter(c => c.id !== couponId));
   };
@@ -277,10 +274,7 @@ export function CouponsList() {
         open={isCreateOpen}
         onOpenChange={setIsCreateOpen}
         onSuccess={() => {
-          toast({
-            title: 'Coupon created',
-            description: 'New discount code has been created successfully',
-          });
+          toast.success('New discount code has been created successfully');
         }}
       />
     </>

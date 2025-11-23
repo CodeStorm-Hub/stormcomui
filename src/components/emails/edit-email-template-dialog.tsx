@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface EmailTemplate {
   id: string;
@@ -69,7 +69,6 @@ export function EditEmailTemplateDialog({
   </div>
 </body>
 </html>`);
-  const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
@@ -78,10 +77,7 @@ export function EditEmailTemplateDialog({
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    toast({
-      title: 'Template updated',
-      description: `"${name}" has been updated successfully.`,
-    });
+    toast.success(`"${name}" has been updated successfully.`);
 
     setIsSaving(false);
     onOpenChange(false);
