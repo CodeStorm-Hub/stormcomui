@@ -274,10 +274,7 @@ export function CouponsList() {
         open={isCreateOpen}
         onOpenChange={setIsCreateOpen}
         onSuccess={() => {
-          toast({
-            title: 'Coupon created',
-            description: 'New discount code has been created successfully',
-          });
+          toast.success('New discount code has been created successfully');
         }}
       />
     </>
