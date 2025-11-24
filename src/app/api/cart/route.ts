@@ -90,9 +90,20 @@ export async function POST(request: NextRequest) {
       sessionId,
     });
 
+    // Calculate tax and shipping
+    const taxRate = 0.08; // 8% tax
+    const tax = cart.subtotal * taxRate;
+    const shipping = cart.subtotal > 50 ? 0 : 10.0; // Free shipping over $50
+    const total = cart.subtotal + tax + shipping;
+
     return NextResponse.json(
       {
-        cart,
+        cart: {
+          ...cart,
+          tax,
+          shipping,
+          total,
+        },
         message: 'Item added to cart successfully',
       },
       { status: 201 }

@@ -130,7 +130,7 @@ export function CartList() {
                       )}
                       <p className="text-xs text-muted-foreground">SKU: {item.sku}</p>
                       <p className="text-sm text-muted-foreground">
-                        ${item.price.toFixed(2)} each
+                        ${(item.price ?? 0).toFixed(2)} each
                       </p>
                       {item.availableStock < 10 && (
                         <p className="text-xs text-orange-600 mt-1">
@@ -185,7 +185,7 @@ export function CartList() {
                     </div>
                     <div className="ml-auto">
                       <Badge variant="secondary">
-                        ${(item.price * item.quantity).toFixed(2)}
+                        ${((item.price ?? 0) * item.quantity).toFixed(2)}
                       </Badge>
                     </div>
                   </div>
@@ -205,25 +205,25 @@ export function CartList() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Subtotal</span>
-              <span>${cart.subtotal.toFixed(2)}</span>
+              <span>${(cart.subtotal ?? 0).toFixed(2)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Tax</span>
-              <span>${cart.tax.toFixed(2)}</span>
+              <span>${(cart.tax ?? 0).toFixed(2)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Shipping</span>
-              <span>{cart.shipping === 0 ? 'FREE' : `$${cart.shipping.toFixed(2)}`}</span>
+              <span>{(cart.shipping ?? 0) === 0 ? 'FREE' : `$${(cart.shipping ?? 0).toFixed(2)}`}</span>
             </div>
-            {cart.subtotal > 0 && cart.subtotal < 50 && (
+            {(cart.subtotal ?? 0) > 0 && (cart.subtotal ?? 0) < 50 && (
               <p className="text-xs text-muted-foreground">
-                Add ${(50 - cart.subtotal).toFixed(2)} more for free shipping
+                Add ${(50 - (cart.subtotal ?? 0)).toFixed(2)} more for free shipping
               </p>
             )}
             <div className="border-t pt-4">
               <div className="flex items-center justify-between text-lg font-semibold">
                 <span>Total</span>
-                <span>${cart.total.toFixed(2)}</span>
+                <span>${(cart.total ?? 0).toFixed(2)}</span>
               </div>
             </div>
           </CardContent>
