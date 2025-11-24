@@ -208,25 +208,36 @@ StormCom is a Next.js 16 multi-tenant SaaS e-commerce platform with authenticati
 
 ---
 
-### Phase 4: Intelligence & Internationalization (Weeks 19-26)
+### Phase 4: Intelligence & Internationalization (Weeks 19-27)
 
-**Objective**: Scale globally and personalize experiences through segmentation and ML
+**Objective**: Scale globally and personalize experiences through advanced multi-channel marketing automation and segmentation
 
 #### Epic 4.1: Customer Segmentation & RFM
 - **CustomerSegment** and **CustomerSegmentMember** tables
 - **CustomerRFMSnapshot** batch job
 - **CustomerLifecycleMetrics** tracking
-- Segment builder UI
+- Segment builder UI with pre-built Bangladesh segments
 - RFM distribution dashboard
+- Geographic targeting (division/district/upazila)
 - **Success Metric**: Repeat purchase uplift > 8%
 
-#### Epic 4.2: Marketing Automation
+#### Epic 4.2: Marketing Automation (Enhanced)
 - **Cart** and **CartItem** tables
-- **EmailCampaign** and **EmailEvent** tables
-- Abandoned cart recovery workflow
-- Churn risk win-back campaigns
+- **MarketingCampaign** with multi-channel support (Email, SMS, WhatsApp)
+- **CampaignTemplate** library with 50+ Bangladesh-specific templates
+- **EmailCampaign**, **SMSCampaign**, **WhatsAppCampaign** tables
+- **EmailEvent**, **SMSEvent**, **WhatsAppEvent** engagement tracking
+- Campaign builder with drag-and-drop interface
+- Abandoned cart recovery workflow (20-30% recovery target)
+- Churn risk win-back campaigns with dynamic discounts
 - Post-purchase upsell automation
-- **Success Metric**: Cart recovery > 12%, Churn win-back > 8%
+- **SMS Gateway Integration**: SSL Wireless, Banglalink, Robi, GP
+- **WhatsApp Business API**: Rich media, interactive buttons, product catalogs
+- **Payment Integration**: bKash, Nagad for SMS credit purchases
+- **A/B Testing**: Message variation testing with winner selection
+- **Analytics Dashboard**: Real-time metrics, ROI tracking, channel comparison
+- **Bangladesh Features**: Bangla language support, seasonal templates (Eid, Pohela Boishakh), COD targeting
+- **Success Metric**: Cart recovery > 20%, Churn win-back > 8%, SMS delivery > 95%, WhatsApp engagement > 60%
 
 #### Epic 4.3: Product Recommendations
 - **ProductEmbedding** table
@@ -241,6 +252,7 @@ StormCom is a Next.js 16 multi-tenant SaaS e-commerce platform with authenticati
 - Locale switcher UI
 - Translation editor
 - Multi-currency display formatting
+- Bangla calendar integration
 - RTL support preparation
 - **Success Metric**: Localized conversion uplift > 5%
 
@@ -252,10 +264,22 @@ StormCom is a Next.js 16 multi-tenant SaaS e-commerce platform with authenticati
 - **Success Metric**: Search p95 latency < 150ms
 
 **Phase 4 KPIs**:
-- Abandoned cart recovery rate: > 12%
+- Abandoned cart recovery rate: > 20% (enhanced from 12%)
 - Segment-driven order share: > 25%
 - Recommendation CTR: > 8%
 - Multi-locale conversion: + 5%
+- SMS delivery success: > 95%
+- WhatsApp engagement rate: > 60%
+- Campaign ROI: > 3:1 (revenue:cost ratio)
+- Multi-channel campaign adoption: > 40% of merchants
+
+**New in Phase 4**:
+- 7 additional marketing automation stories
+- Bangladesh-specific SMS gateway integrations
+- WhatsApp Business API with rich media
+- Campaign builder with 50+ templates
+- bKash/Nagad payment integration
+- Comprehensive analytics dashboard with ROI tracking
 
 ---
 

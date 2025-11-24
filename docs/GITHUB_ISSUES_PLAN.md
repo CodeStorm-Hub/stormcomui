@@ -939,53 +939,175 @@ Each issue should include:
 
 ### Epic: Marketing Automation
 
-#### Issue #51: Implement Cart & Email Tables
-- **Priority**: P1
-- **Type**: Story
-- **Phase**: 4
-- **Estimate**: 4 days
-- **Description**:
-  - Create `Cart`, `CartItem`, `EmailCampaign`, `EmailEvent` models
-  - Cart tracking for abandoned cart recovery
-  - Email engagement logging
-- **Acceptance Criteria**:
-  - [ ] Cart tables created
-  - [ ] Email campaign tables
-  - [ ] EmailEvent webhook ingestion
-- **Dependencies**: Phase 3 completion
-
-#### Issue #52: Abandoned Cart Recovery Workflow
+#### Issue #51: Implement Cart & Marketing Campaign Tables
 - **Priority**: P1
 - **Type**: Story
 - **Phase**: 4
 - **Estimate**: 5 days
 - **Description**:
-  - Detect cart inactivity (1h threshold)
-  - Automation trigger
-  - Email template with cart items
-  - Track recovery conversions
+  - Create `Cart`, `CartItem`, `MarketingCampaign`, `CampaignTemplate` models
+  - Create `EmailCampaign`, `SMSCampaign`, `WhatsAppCampaign` models
+  - Create `EmailEvent`, `SMSEvent`, `WhatsAppEvent` models for engagement tracking
+  - Cart tracking for abandoned cart recovery
+  - Multi-channel campaign support (Email, SMS, WhatsApp)
 - **Acceptance Criteria**:
-  - [ ] Abandoned cart detection job
-  - [ ] Email template with personalization
-  - [ ] Recovery tracking
-  - [ ] Recovery rate > 12%
-- **Dependencies**: #51
+  - [ ] Cart tables created with proper indexes
+  - [ ] MarketingCampaign table supports multiple channel types
+  - [ ] CampaignTemplate table with 50+ Bangladesh-specific templates
+  - [ ] EmailEvent/SMSEvent/WhatsAppEvent webhook ingestion configured
+  - [ ] Campaign status tracking (draft, scheduled, sent, completed)
+- **Dependencies**: Phase 3 completion
+- **Reference**: docs/research/MARKETING_AUTOMATION_V2.md
 
-#### Issue #53: Churn Risk Win-Back Campaign
+#### Issue #52: Campaign Builder & Template System
+- **Priority**: P1
+- **Type**: Story
+- **Phase**: 4
+- **Estimate**: 6 days
+- **Description**:
+  - Visual campaign builder UI with drag-and-drop
+  - Template library with Bangladesh-specific templates (Eid, Pohela Boishakh, Flash Sale, etc.)
+  - Multi-channel message composer (Email, SMS, WhatsApp)
+  - Campaign scheduling system
+  - A/B testing framework for message variations
+- **Acceptance Criteria**:
+  - [ ] Campaign builder UI with template selection
+  - [ ] 50+ pre-built templates (promotional, seasonal, product launch, loyalty)
+  - [ ] Multi-channel content editor (character limits, emoji support)
+  - [ ] Scheduling interface (immediate, scheduled, recurring)
+  - [ ] A/B test configuration (split percentage, winner criteria)
+  - [ ] Campaign preview across all channels
+- **Dependencies**: #51
+- **Reference**: docs/research/MARKETING_AUTOMATION_V2.md sections 4.1-4.2
+
+#### Issue #53: Abandoned Cart Recovery Workflow
+- **Priority**: P1
+- **Type**: Story
+- **Phase**: 4
+- **Estimate**: 5 days
+- **Description**:
+  - Detect cart inactivity (1h threshold, configurable)
+  - Multi-channel automation trigger (WhatsApp preferred, fallback to SMS/Email)
+  - Personalized template with cart items and images
+  - Track recovery conversions with attribution
+  - Recovery rate optimization (target 20-30%)
+- **Acceptance Criteria**:
+  - [ ] Abandoned cart detection job (configurable threshold: 30m, 1h, 3h, 24h)
+  - [ ] Multi-channel templates with cart item personalization
+  - [ ] Automatic channel selection (WhatsApp → SMS → Email priority)
+  - [ ] Recovery tracking with revenue attribution
+  - [ ] Recovery rate > 12% (stretch goal: 20%+)
+  - [ ] Discount code generation for recovery campaigns
+- **Dependencies**: #51, #52
+- **Reference**: docs/research/MARKETING_AUTOMATION_V2.md section 7.1
+
+#### Issue #53a: SMS Gateway Integration (Bangladesh Focus)
 - **Priority**: P1
 - **Type**: Story
 - **Phase**: 4
 - **Estimate**: 4 days
 - **Description**:
-  - Identify churn risk customers (45+ days inactive)
-  - Send win-back email with offer
-  - Track reactivation
+  - Integrate Bangladesh SMS gateways (SSL Wireless, Banglalink, Robi, GP)
+  - SMS credit management system
+  - bKash/Nagad payment integration for SMS credits
+  - SMS delivery tracking and status webhooks
+  - Bangla Unicode (UTF-8) support
 - **Acceptance Criteria**:
-  - [ ] Churn detection logic
-  - [ ] Win-back email template
-  - [ ] Reactivation tracking
+  - [ ] SMS gateway abstraction layer supporting multiple providers
+  - [ ] SSL Wireless integration (primary)
+  - [ ] SMS credit purchase via bKash/Nagad
+  - [ ] Credit packages: 500, 1000, 5000, 10000 SMS with bonus structure
+  - [ ] Delivery status tracking (sent, delivered, failed)
+  - [ ] Bangla text support with proper encoding
+  - [ ] SMS length calculator (160 chars standard, 70 chars Bangla)
+- **Dependencies**: #51
+- **Reference**: docs/research/MARKETING_AUTOMATION_V2.md section 3.2
+
+#### Issue #53b: WhatsApp Business API Integration
+- **Priority**: P1
+- **Type**: Story
+- **Phase**: 4
+- **Estimate**: 5 days
+- **Description**:
+  - WhatsApp Business API integration
+  - Template message approval workflow
+  - Rich media support (images, product catalogs)
+  - Interactive buttons and quick replies
+  - Delivery and read receipts tracking
+- **Acceptance Criteria**:
+  - [ ] WhatsApp Business API connection setup
+  - [ ] Template submission and approval workflow UI
+  - [ ] Rich media attachment support (images up to 5MB)
+  - [ ] Interactive message builder (buttons, lists, quick replies)
+  - [ ] Delivery status tracking (sent, delivered, read)
+  - [ ] Conversation 24-hour window management
+  - [ ] Product catalog integration for shopping messages
+- **Dependencies**: #51
+- **Reference**: docs/research/MARKETING_AUTOMATION_V2.md section 6.2
+
+#### Issue #54: Churn Risk Win-Back Campaign
+- **Priority**: P1
+- **Type**: Story
+- **Phase**: 4
+- **Estimate**: 4 days
+- **Description**:
+  - Identify churn risk customers (45+ days inactive, configurable)
+  - Multi-channel win-back campaigns
+  - Dynamic discount code generation
+  - Track reactivation and revenue impact
+- **Acceptance Criteria**:
+  - [ ] Churn detection logic with configurable thresholds (30d, 45d, 60d, 90d)
+  - [ ] Win-back campaign templates (email, SMS, WhatsApp)
+  - [ ] Dynamic discount code generation (10%, 15%, 20%, 25%)
+  - [ ] Reactivation tracking with revenue attribution
   - [ ] Win-back rate > 8%
-- **Dependencies**: #48 (Segmentation)
+  - [ ] Automated scheduling (weekly, bi-weekly, monthly)
+- **Dependencies**: #48 (Segmentation), #51, #52
+- **Reference**: docs/research/MARKETING_AUTOMATION_V2.md section 7.4
+
+#### Issue #54a: Campaign Analytics & Attribution Dashboard
+- **Priority**: P1
+- **Type**: Story
+- **Phase**: 4
+- **Estimate**: 5 days
+- **Description**:
+  - Real-time campaign analytics dashboard
+  - Multi-channel performance comparison
+  - Revenue attribution tracking
+  - ROI calculator
+  - Export reports (CSV, PDF, Excel)
+- **Acceptance Criteria**:
+  - [ ] Real-time metrics (sent, delivered, opened, clicked, converted)
+  - [ ] Channel comparison charts (SMS vs WhatsApp vs Email effectiveness)
+  - [ ] Revenue attribution per campaign with conversion tracking
+  - [ ] ROI calculator (campaign cost vs revenue generated)
+  - [ ] Customer journey visualization
+  - [ ] Export functionality (CSV, PDF, Excel formats)
+  - [ ] Date range filtering and comparison
+- **Dependencies**: #51, #52, #53
+- **Reference**: docs/research/MARKETING_AUTOMATION_V2.md section 8
+
+#### Issue #54b: Bangladesh-Specific Features
+- **Priority**: P2
+- **Type**: Story
+- **Phase**: 4
+- **Estimate**: 4 days
+- **Description**:
+  - Bangladesh city/district targeting
+  - Seasonal campaign templates (Eid, Pohela Boishakh, Victory Day)
+  - Cash-on-delivery (COD) preference targeting
+  - Mobile number validation (Bangladesh format)
+  - Bangla language support throughout platform
+- **Acceptance Criteria**:
+  - [ ] Geographic targeting by division/district/upazila
+  - [ ] 20+ Bangladesh seasonal templates
+  - [ ] COD preference segmentation filter
+  - [ ] Bangladesh mobile number validation (+880, 01X format)
+  - [ ] Bangla calendar integration for campaigns
+  - [ ] Cultural sensitivity guidelines in template library
+  - [ ] Local payment method integration (bKash, Nagad, Rocket)
+- **Dependencies**: #51, #52
+- **Reference**: docs/research/MARKETING_AUTOMATION_V2.md section 9
 
 ---
 
@@ -1333,23 +1455,31 @@ Each issue should include:
 - **Phase 1**: 20 issues (6 epics)
 - **Phase 2**: 14 issues (3 epics)
 - **Phase 3**: 13 issues (4 epics)
-- **Phase 4**: 13 issues (4 epics)
+- **Phase 4**: 20 issues (4 epics) - *Updated: Enhanced marketing automation with multi-channel support*
 - **Phase 5**: 10 issues (4 epics)
-- **Total**: 70+ issues across 21 epics
+- **Total**: 77+ issues across 21 epics
 
 ### Priority Distribution
 - **P0 (Critical)**: 25 issues
-- **P1 (High)**: 35 issues
-- **P2 (Medium)**: 8 issues
+- **P1 (High)**: 42 issues - *Updated: +7 marketing automation issues*
+- **P2 (Medium)**: 9 issues - *Updated: +1 Bangladesh-specific features*
 - **P3 (Low)**: 2 issues
 
 ### Estimated Timeline
 - **Phase 1**: 6 weeks (60 person-days)
 - **Phase 2**: 6 weeks (50 person-days)
 - **Phase 3**: 6 weeks (45 person-days)
-- **Phase 4**: 8 weeks (55 person-days)
+- **Phase 4**: 9 weeks (68 person-days) - *Updated: +13 days for enhanced marketing automation*
 - **Phase 5**: 9 weeks (50 person-days)
-- **Total**: ~35 weeks (9 months) with 2-3 full-stack engineers
+- **Total**: ~36 weeks (9 months) with 2-3 full-stack engineers
+
+### Recent Updates (2025-11-24)
+- Added comprehensive marketing automation suite based on MARKETING_AUTOMATION_V2.md
+- Integrated Bangladesh-specific features (SMS gateways, bKash/Nagad, Bangla support)
+- Enhanced multi-channel campaigns (Email, SMS, WhatsApp)
+- Added campaign builder with 50+ templates
+- Included analytics dashboard with ROI tracking
+- Total new issues: 7 additional stories in Phase 4
 
 ---
 

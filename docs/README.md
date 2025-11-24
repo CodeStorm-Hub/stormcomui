@@ -2,27 +2,40 @@
 
 Welcome to the StormCom project documentation! This directory contains comprehensive planning, research, and implementation guides for the StormCom multi-tenant SaaS e-commerce platform.
 
+## 🎉 Latest Updates (2025-11-24)
+
+**Version 1.1 Released** - Enhanced Marketing Automation with Bangladesh Focus
+- Added 7 new issues for multi-channel campaigns (Email, SMS, WhatsApp)
+- SMS gateway integration for Bangladesh providers (SSL Wireless, Banglalink, etc.)
+- WhatsApp Business API with rich media support
+- Campaign builder with 50+ Bangladesh-specific templates
+- bKash/Nagad payment integration for SMS credits
+- Enhanced cart recovery target: 20%+ (from 12%)
+- See **[CHANGELOG.md](./CHANGELOG.md)** for complete details
+
 ## 📚 Quick Navigation
 
 ### 🚀 Start Here
 - **[EXECUTIVE_SUMMARY.md](./EXECUTIVE_SUMMARY.md)** - High-level overview for stakeholders and new team members
-- **[PROJECT_PLAN.md](./PROJECT_PLAN.md)** - Comprehensive 35-week implementation roadmap
+- **[PROJECT_PLAN.md](./PROJECT_PLAN.md)** - Comprehensive 36-week implementation roadmap (updated)
 - **[GITHUB_PROJECT_SETUP_GUIDE.md](./GITHUB_PROJECT_SETUP_GUIDE.md)** - Step-by-step guide to setup GitHub Project #7
+- **[CHANGELOG.md](./CHANGELOG.md)** - Version history and recent updates (NEW)
 
 ### 📋 Implementation
-- **[GITHUB_ISSUES_PLAN.md](./GITHUB_ISSUES_PLAN.md)** - 70+ detailed issues with acceptance criteria, estimates, and dependencies
+- **[GITHUB_ISSUES_PLAN.md](./GITHUB_ISSUES_PLAN.md)** - 77+ detailed issues with acceptance criteria, estimates, and dependencies (updated)
 
 ### 🔬 Research & Analysis
 All research documents are in the [research/](./research/) directory:
+- **[Marketing Automation V2](./research/MARKETING_AUTOMATION_V2.md)** - Comprehensive guide (1,705 lines) (NEW)
 - [Modern E-Commerce Funnelling and MACH Commerce](./research/Modern%20E-Commerce%20Funnelling%20and%20MACH%20Commerce%20in%20Multi-Tenant%20SaaS.md)
 - [API Refactor Plan](./research/api_refactor_plan.md)
 - [Business Logic Review](./research/business_logic_review.md)
-- [Codebase Feature Gap Analysis](./research/codebase_feature_gap_analysis.md)
-- [Cost Optimization Strategy](./research/cost_optimization.md)
-- [Database Schema Analysis](./research/database_schema_analysis.md)
+- [Codebase Feature Gap Analysis](./research/codebase_feature_gap_analysis.md) (updated)
+- [Cost Optimization Strategy](./research/cost_optimization.md) (updated)
+- [Database Schema Analysis](./research/database_schema_analysis.md) (updated)
 - [Feature Roadmap & User Stories](./research/feature_roadmap_user_stories.md)
 - [Implementation Plan](./research/implementation_plan.md)
-- [Marketing Automation Strategy](./research/marketing_automation.md)
+- [Marketing Automation Strategy](./research/marketing_automation.md) (updated)
 - [Observability Strategy](./research/observability_strategy.md)
 - [Performance & Scaling Strategy](./research/performance_scaling.md)
 - [Permissions Taxonomy](./research/permissions_taxonomy.md)
@@ -36,10 +49,10 @@ All research documents are in the [research/](./research/) directory:
 
 **StormCom** is a Next.js 16 multi-tenant SaaS e-commerce platform with:
 - **Tech Stack**: Next.js 16.0.3, React 19.2, TypeScript 5, Prisma 6.19.0, NextAuth 4.24, shadcn-ui
-- **Timeline**: 35 weeks (9 months) implementation
+- **Timeline**: 36 weeks (9 months) implementation (updated from 35 weeks)
 - **Team**: 2-3 full-stack engineers + support
-- **Total Effort**: ~260 person-days
-- **Total Issues**: 70+ across 21 epics
+- **Total Effort**: ~273 person-days (updated from 260)
+- **Total Issues**: 77+ across 21 epics (updated from 70+)
 
 ---
 

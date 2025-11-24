@@ -85,22 +85,42 @@ Transform StormCom into a competitive, scalable, and secure multi-tenant SaaS e-
 
 ---
 
-### Phase 4: Intelligence & i18n (Weeks 19-26)
-**Focus**: Personalization and global expansion
+### Phase 4: Intelligence & i18n (Weeks 19-27)
+**Focus**: Advanced multi-channel marketing automation and global expansion
 
 **Key Deliverables**:
-- Customer segmentation with RFM scoring
-- Marketing automation (abandoned cart, churn win-back)
-- Product recommendations
-- Multi-locale and currency support
+- Customer segmentation with RFM scoring and geographic targeting
+- **Enhanced Marketing Automation**:
+  - Multi-channel campaigns (Email, SMS, WhatsApp)
+  - Campaign builder with 50+ Bangladesh-specific templates
+  - SMS gateway integration (SSL Wireless, Banglalink, Robi, GP)
+  - WhatsApp Business API with rich media support
+  - bKash/Nagad payment for SMS credits
+  - A/B testing framework
+  - Real-time analytics dashboard with ROI tracking
+- Abandoned cart recovery (20-30% target)
+- Churn win-back campaigns with dynamic discounts
+- Product recommendations with vector similarity
+- Multi-locale and currency support with Bangla language
 
 **Success Metrics**:
-- Cart recovery >12%
+- Cart recovery >20% (enhanced from 12%)
 - Segment-driven orders >25%
 - Recommendation CTR >8%
 - Localized conversion uplift +5%
+- SMS delivery success >95%
+- WhatsApp engagement >60%
+- Campaign ROI >3:1
 
-**Issues**: 13 issues across 4 epics
+**Issues**: 20 issues across 4 epics (Enhanced: +7 marketing automation stories)
+
+**Bangladesh-Specific Features**:
+- Bangla Unicode support throughout platform
+- Seasonal templates (Eid, Pohela Boishakh, Victory Day)
+- COD preference targeting
+- Mobile number validation (+880 format)
+- Geographic targeting by division/district
+- Local payment methods (bKash, Nagad, Rocket)
 
 ---
 
@@ -131,8 +151,10 @@ Transform StormCom into a competitive, scalable, and secure multi-tenant SaaS e-
 | **1** | Weeks 1-6 | Order p95 <400ms, Cache hit >65%, Zero oversell |
 | **2** | Weeks 7-12 | AOV +10%, Promotion >20%, Load <250ms |
 | **3** | Weeks 13-18 | Webhook >98%, Analytics <1s lag, MTTR <30m |
-| **4** | Weeks 19-26 | Cart recovery >12%, Segment >25%, Rec CTR >8% |
-| **5** | Weeks 27-36 | Auto workflows >70%, Fraud >90%, AUC >0.75 |
+| **4** | Weeks 19-27 | Cart recovery >20%, Segment >25%, SMS >95%, WhatsApp >60%, ROI >3:1 |
+| **5** | Weeks 28-37 | Auto workflows >70%, Fraud >90%, AUC >0.75 |
+
+**Phase 4 Enhanced**: Multi-channel marketing (Email, SMS, WhatsApp), Bangladesh-specific features, 20% cart recovery target, campaign ROI tracking
 
 ---
 
