@@ -30,6 +30,7 @@ export function NavMain({
     items?: {
       title: string
       url: string
+      badge?: React.ReactNode
     }[]
   }[]
 }) {
@@ -79,6 +80,7 @@ export function NavMain({
                           <SidebarMenuSubButton asChild>
                             <Link href={subItem.url}>
                               <span>{subItem.title}</span>
+                              {subItem.badge && <span className="ml-auto">{subItem.badge}</span>}
                             </Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>

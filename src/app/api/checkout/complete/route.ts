@@ -28,7 +28,6 @@ const completeCheckoutSchema = z.object({
       productId: z.string().cuid(),
       variantId: z.string().cuid().optional(),
       quantity: z.number().int().positive(),
-      price: z.number().min(0),
     })
   ).min(1),
   shippingAddress: shippingAddressSchema,
@@ -37,8 +36,8 @@ const completeCheckoutSchema = z.object({
   shippingCost: z.number().min(0),
   discountCode: z.string().optional(),
   customerNote: z.string().optional(),
-  paymentMethod: z.string().optional(),
-  paymentGateway: z.string().optional(),
+  paymentMethod: z.enum(['CREDIT_CARD', 'DEBIT_CARD', 'MOBILE_BANKING', 'BANK_TRANSFER', 'CASH_ON_DELIVERY']).optional(),
+  paymentGateway: z.enum(['STRIPE', 'SSLCOMMERZ', 'MANUAL']).optional(),
 });
 
 // POST /api/checkout/complete - Create order
@@ -63,8 +62,9 @@ export async function POST(request: NextRequest) {
     const checkoutService = CheckoutService.getInstance();
     const order = await checkoutService.createOrder({
       ...validatedInput,
+      customerId: session.user.id,
       ipAddress,
-    });
+    }, session.user.id);
 
     return NextResponse.json(order, { status: 201 });
   } catch (error) {

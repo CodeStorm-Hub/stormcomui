@@ -25,6 +25,7 @@ import { NavDocuments } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
+import { CartBadge } from "@/components/cart/cart-badge"
 import {
   Sidebar,
   SidebarContent,
@@ -94,6 +95,7 @@ const data = {
         {
           title: "Cart",
           url: "/dashboard/cart",
+          badge: <CartBadge storeId="clqm1j4k00000l8dw8z8r8z8r" />,
         },
       ],
     },

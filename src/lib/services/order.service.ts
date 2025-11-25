@@ -653,8 +653,12 @@ export class OrderService {
       paymentMethod: order.paymentMethod,
       store: order.store,
       customer: order.customer,
-      billingAddress: order.billingAddress as any,
-      shippingAddress: order.shippingAddress as any,
+      billingAddress: typeof order.billingAddress === 'string' 
+        ? JSON.parse(order.billingAddress) 
+        : order.billingAddress,
+      shippingAddress: typeof order.shippingAddress === 'string' 
+        ? JSON.parse(order.shippingAddress) 
+        : order.shippingAddress,
       items: order.items.map(item => ({
         productName: item.product?.name || item.productName || 'Unknown Product',
         variantName: item.variant?.name || item.variantName || null,

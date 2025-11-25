@@ -7,6 +7,7 @@
 
 import { useState } from 'react';
 import { Loader2, CreditCard, Building2 } from 'lucide-react';
+import { useCart } from '@/contexts/cart-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -27,82 +28,90 @@ export function PaymentMethodStep({
   onBack,
   isProcessing,
 }: PaymentMethodStepProps) {
+  const { cart, refreshCart } = useCart();
   const [paymentMethod, setPaymentMethod] = useState<string>('card');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Calculate totals from cart
+  const subtotal = cart?.subtotal ?? 0;
+  const tax = cart?.tax ?? 0;
+  const shipping = cart?.shipping ?? 0;
+  const total = cart?.total ?? 0;
+
+  // Map UI payment method values to Prisma PaymentMethod enum
+  const mapPaymentMethod = (method: string): string => {
+    const mapping: Record<string, string> = {
+      'card': 'CREDIT_CARD',
+      'bank': 'BANK_TRANSFER',
+    };
+    return mapping[method] || 'CREDIT_CARD';
+  };
 
   const handlePlaceOrder = async () => {
     setIsSubmitting(true);
 
     try {
-      // Step 1: Create payment intent
-      // TODO: Call POST /api/checkout/payment-intent
-      // const paymentIntentResponse = await fetch('/api/checkout/payment-intent', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     amount: 11878, // $118.78 in cents
-      //     currency: 'usd',
-      //   }),
-      // });
+      // Get cart items to pass to the order creation API
+      if (!cart || !cart.items || cart.items.length === 0) {
+        throw new Error('Cart is empty');
+      }
+
+      const storeId = 'clqm1j4k00000l8dw8z8r8z8r'; // TODO: Get from user's organization
+
+      // Prepare order data for the API
+      const orderData = {
+        storeId,
+        items: cart.items.map((item) => ({
+          productId: item.productId,
+          variantId: item.variantId || undefined,
+          quantity: item.quantity,
+        })),
+        shippingAddress: {
+          firstName: shippingAddress.firstName,
+          lastName: shippingAddress.lastName,
+          email: shippingAddress.email,
+          phone: shippingAddress.phone,
+          address: shippingAddress.addressLine1,
+          city: shippingAddress.city,
+          state: shippingAddress.state || '',
+          postalCode: shippingAddress.zipCode,
+          country: shippingAddress.country,
+        },
+        shippingMethod: 'standard',
+        shippingCost: shipping,
+        paymentMethod: mapPaymentMethod(paymentMethod),
+        paymentGateway: 'STRIPE',
+      };
+
+      // Call the checkout complete API
+      console.log('Creating order with data:', orderData);
       
-      // if (!paymentIntentResponse.ok) {
-      //   throw new Error('Failed to create payment intent');
-      // }
+      const response = await fetch('/api/checkout/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData),
+      });
+
+      console.log('Order creation response status:', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Order creation failed:', errorData);
+        throw new Error(errorData.error || 'Failed to create order');
+      }
+
+      const order = await response.json();
+      console.log('Order created successfully:', order);
       
-      // const { clientSecret } = await paymentIntentResponse.json();
+      // Refresh cart to show empty state after order placement
+      await refreshCart();
       
-      // Step 2: Confirm payment with Stripe (placeholder)
-      // TODO: Use @stripe/stripe-js to confirm payment
-      // const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-      //   payment_method: {
-      //     card: cardElement,
-      //     billing_details: {
-      //       name: `${shippingAddress.firstName} ${shippingAddress.lastName}`,
-      //       email: shippingAddress.email,
-      //       phone: shippingAddress.phone,
-      //       address: {
-      //         line1: shippingAddress.addressLine1,
-      //         line2: shippingAddress.addressLine2,
-      //         city: shippingAddress.city,
-      //         state: shippingAddress.state,
-      //         postal_code: shippingAddress.zipCode,
-      //         country: shippingAddress.country,
-      //       },
-      //     },
-      //   },
-      // });
-      
-      // if (error) {
-      //   throw new Error(error.message);
-      // }
-      
-      // Step 3: Complete order
-      // TODO: Call POST /api/checkout/complete
-      // const completeResponse = await fetch('/api/checkout/complete', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     paymentIntentId: paymentIntent.id,
-      //     shippingAddress,
-      //   }),
-      // });
-      
-      // if (!completeResponse.ok) {
-      //   throw new Error('Failed to complete order');
-      // }
-      
-      // const { orderId } = await completeResponse.json();
-      
-      // Simulate API calls
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock order ID
-      const mockOrderId = `ORD-${Date.now()}`;
-      
-      onComplete(mockOrderId);
+      // Navigate to confirmation page with the real order ID
+      console.log('Navigating to confirmation with order ID:', order.id);
+      onComplete(order.id);
     } catch (error) {
       console.error('Payment error:', error);
-      // TODO: Show error toast
+      alert(error instanceof Error ? error.message : 'Failed to place order. Please try again.');
       setIsSubmitting(false);
     }
   };
@@ -221,20 +230,20 @@ export function PaymentMethodStep({
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span>Subtotal</span>
-              <span>$99.98</span>
+              <span>${subtotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span>Shipping</span>
-              <span>$10.00</span>
+              <span>${shipping.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span>Tax</span>
-              <span>$8.80</span>
+              <span>${tax.toFixed(2)}</span>
             </div>
             <Separator />
             <div className="flex justify-between text-lg font-bold">
               <span>Total</span>
-              <span>$118.78</span>
+              <span>${total.toFixed(2)}</span>
             </div>
           </div>
         </CardContent>

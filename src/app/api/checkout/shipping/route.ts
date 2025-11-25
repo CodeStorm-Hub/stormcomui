@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { CheckoutService } from '@/lib/services/checkout.service';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
 // Validation schema for shipping calculation
@@ -28,7 +29,6 @@ const calculateShippingSchema = z.object({
       productId: z.string().cuid(),
       variantId: z.string().cuid().optional(),
       quantity: z.number().int().positive(),
-      price: z.number().min(0),
     })
   ).min(1),
 });
@@ -47,14 +47,28 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedInput = calculateShippingSchema.parse(body);
 
+    // Fetch cart items with prices
+    const cartItems = await prisma.cartItem.findMany({
+      where: {
+        cart: {
+          userId: session.user.id,
+          storeId: validatedInput.storeId,
+        },
+      },
+      select: {
+        price: true,
+        quantity: true,
+      },
+    });
+
     const checkoutService = CheckoutService.getInstance();
-    const options = await checkoutService.calculateShipping(
+    const shippingOptions = await checkoutService.calculateShipping(
       validatedInput.storeId,
       validatedInput.shippingAddress,
-      validatedInput.items
+      cartItems
     );
 
-    return NextResponse.json({ options });
+    return NextResponse.json({ options: shippingOptions });
   } catch (error) {
     console.error('POST /api/checkout/shipping error:', error);
     

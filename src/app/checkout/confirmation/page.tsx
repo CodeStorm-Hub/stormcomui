@@ -12,11 +12,45 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 
+interface OrderItem {
+  id: string;
+  productName: string;
+  variantName?: string;
+  sku: string;
+  price: number;
+  quantity: number;
+  subtotal: number;
+  image?: string;
+}
+
+interface Order {
+  id: string;
+  orderNumber: string;
+  status: string;
+  paymentStatus: string;
+  subtotal: number;
+  taxAmount: number;
+  shippingAmount: number;
+  discountAmount: number;
+  totalAmount: number;
+  shippingAddress: {
+    street?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
+  } | string;
+  items: OrderItem[];
+  createdAt: string;
+}
+
 function ConfirmationContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const orderId = searchParams?.get('orderId');
   const [isLoading, setIsLoading] = useState(true);
+  const [order, setOrder] = useState<Order | null>(null);
+  const [error, setError] = useState<string>('');
 
   useEffect(() => {
     if (!orderId) {
@@ -24,11 +58,36 @@ function ConfirmationContent() {
       return;
     }
 
-    // TODO: Fetch order details from API
-    // For now, simulate loading
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
+    // Fetch real order data
+    const fetchOrder = async () => {
+      try {
+        // TODO: Get actual storeId from user's organization/store
+        const storeId = 'clqm1j4k00000l8dw8z8r8z8r';
+        
+        console.log('Fetching order:', orderId, 'for store:', storeId);
+        
+        const response = await fetch(`/api/orders/${orderId}?storeId=${storeId}`);
+        
+        console.log('Order fetch response status:', response.status);
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Order fetch failed:', errorData);
+          throw new Error(errorData.error || 'Order not found');
+        }
+        
+        const data = await response.json();
+        console.log('Order fetched successfully:', data);
+        setOrder(data);
+      } catch (err) {
+        console.error('Failed to fetch order:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load order');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchOrder();
   }, [orderId, router]);
 
   if (isLoading) {
@@ -41,6 +100,32 @@ function ConfirmationContent() {
       </div>
     );
   }
+
+  if (error || !order) {
+    return (
+      <div className="container max-w-2xl mx-auto py-8 px-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center space-y-4">
+              <h2 className="text-xl font-semibold text-destructive mb-2">Order Not Found</h2>
+              <p className="text-muted-foreground mb-4">{error || 'This order does not exist or you do not have access to it.'}</p>
+              <Button onClick={() => router.push('/dashboard')}>Go to Dashboard</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
   return (
     <div className="container mx-auto py-10 max-w-3xl">
@@ -64,36 +149,76 @@ function ConfirmationContent() {
         <Card>
           <CardHeader>
             <CardTitle>Order Details</CardTitle>
-            <CardDescription>Order #{orderId}</CardDescription>
+            <CardDescription>Order #{order.orderNumber || order.id}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-3">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Order Number</span>
-                <span className="font-medium">{orderId}</span>
+                <span className="font-medium">{order.orderNumber || order.id}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Order Date</span>
-                <span className="font-medium">
-                  {new Date().toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </span>
+                <span className="font-medium">{formatDate(order.createdAt)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Payment Status</span>
+                <span className="font-medium capitalize">{order.paymentStatus?.toLowerCase() || 'Pending'}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Order Total</span>
-                <span className="font-medium">$118.78</span>
+                <span className="font-medium">${order.totalAmount?.toFixed(2)}</span>
               </div>
             </div>
+
+            <Separator />
+
+            {/* Order Items */}
+            <div className="space-y-3">
+              <h3 className="font-medium text-sm">Items Ordered</h3>
+              {order.items?.map((item: OrderItem, index: number) => (
+                <div key={index} className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    {item.quantity}x {item.productName}
+                  </span>
+                  <span className="font-medium">${(item.price * item.quantity).toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+
+            {order.shippingAddress && (
+              <>
+                <Separator />
+                {/* Shipping Address */}
+                <div className="space-y-2">
+                  <h3 className="font-medium text-sm">Shipping Address</h3>
+                  <div className="text-sm text-muted-foreground">
+                    {typeof order.shippingAddress === 'string' ? (
+                      <p>{order.shippingAddress}</p>
+                    ) : (
+                      <>
+                        {order.shippingAddress.street && <p>{order.shippingAddress.street}</p>}
+                        {order.shippingAddress.city && (
+                          <p>
+                            {order.shippingAddress.city}
+                            {order.shippingAddress.state && `, ${order.shippingAddress.state}`}
+                            {order.shippingAddress.postalCode && ` ${order.shippingAddress.postalCode}`}
+                          </p>
+                        )}
+                        {order.shippingAddress.country && <p>{order.shippingAddress.country}</p>}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
         {/* What's Next */}
         <Card>
           <CardHeader>
-            <CardTitle>What's Next?</CardTitle>
+            <CardTitle>What&apos;s Next?</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex gap-4">
@@ -103,7 +228,7 @@ function ConfirmationContent() {
               <div className="space-y-1">
                 <h3 className="font-medium">Order Confirmation Email</h3>
                 <p className="text-sm text-muted-foreground">
-                  We've sent a confirmation email to your email address with your order details.
+                  We&apos;ve sent a confirmation email to your email address with your order details.
                 </p>
               </div>
             </div>
@@ -117,7 +242,7 @@ function ConfirmationContent() {
               <div className="space-y-1">
                 <h3 className="font-medium">Order Processing</h3>
                 <p className="text-sm text-muted-foreground">
-                  Your order is being prepared. You'll receive another email when it ships.
+                  Your order is being prepared. You&apos;ll receive another email when it ships.
                 </p>
               </div>
             </div>
@@ -131,7 +256,7 @@ function ConfirmationContent() {
               <div className="space-y-1">
                 <h3 className="font-medium">Track Your Order</h3>
                 <p className="text-sm text-muted-foreground">
-                  Once shipped, you'll be able to track your package's delivery progress.
+                  Once shipped, you&apos;ll be able to track your package&apos;s delivery progress.
                 </p>
               </div>
             </div>
