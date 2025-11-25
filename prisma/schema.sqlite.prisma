@@ -220,6 +220,8 @@ model Store {
   
   name           String
   slug           String   @unique
+  subdomain      String?  @unique  // vendor1, vendor2 (for vendor1.stormcom.app)
+  customDomain   String?  @unique  // vendor.com (for custom CNAME domains)
   description    String?
   logo           String?
   email          String
@@ -262,6 +264,8 @@ model Store {
   deletedAt      DateTime?
   
   @@index([slug])
+  @@index([subdomain])
+  @@index([customDomain])
   @@index([subscriptionPlan])
   @@index([subscriptionStatus])
 }
