@@ -12,12 +12,44 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 
+interface OrderItem {
+  id: string;
+  productName: string;
+  variantName?: string;
+  sku: string;
+  price: number;
+  quantity: number;
+  subtotal: number;
+  image?: string;
+}
+
+interface Order {
+  id: string;
+  orderNumber: string;
+  status: string;
+  paymentStatus: string;
+  subtotal: number;
+  taxAmount: number;
+  shippingAmount: number;
+  discountAmount: number;
+  totalAmount: number;
+  shippingAddress: {
+    street?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
+  } | string;
+  items: OrderItem[];
+  createdAt: string;
+}
+
 function ConfirmationContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const orderId = searchParams?.get('orderId');
   const [isLoading, setIsLoading] = useState(true);
-  const [order, setOrder] = useState<any>(null);
+  const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
@@ -144,10 +176,10 @@ function ConfirmationContent() {
             {/* Order Items */}
             <div className="space-y-3">
               <h3 className="font-medium text-sm">Items Ordered</h3>
-              {order.items?.map((item: any, index: number) => (
+              {order.items?.map((item: OrderItem, index: number) => (
                 <div key={index} className="flex justify-between text-sm">
                   <span className="text-muted-foreground">
-                    {item.quantity}x {item.product?.name || 'Product'}
+                    {item.quantity}x {item.productName}
                   </span>
                   <span className="font-medium">${(item.price * item.quantity).toFixed(2)}</span>
                 </div>
@@ -161,11 +193,21 @@ function ConfirmationContent() {
                 <div className="space-y-2">
                   <h3 className="font-medium text-sm">Shipping Address</h3>
                   <div className="text-sm text-muted-foreground">
-                    <p>{order.shippingAddress.street}</p>
-                    <p>
-                      {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.postalCode}
-                    </p>
-                    <p>{order.shippingAddress.country}</p>
+                    {typeof order.shippingAddress === 'string' ? (
+                      <p>{order.shippingAddress}</p>
+                    ) : (
+                      <>
+                        {order.shippingAddress.street && <p>{order.shippingAddress.street}</p>}
+                        {order.shippingAddress.city && (
+                          <p>
+                            {order.shippingAddress.city}
+                            {order.shippingAddress.state && `, ${order.shippingAddress.state}`}
+                            {order.shippingAddress.postalCode && ` ${order.shippingAddress.postalCode}`}
+                          </p>
+                        )}
+                        {order.shippingAddress.country && <p>{order.shippingAddress.country}</p>}
+                      </>
+                    )}
                   </div>
                 </div>
               </>
@@ -176,7 +218,7 @@ function ConfirmationContent() {
         {/* What's Next */}
         <Card>
           <CardHeader>
-            <CardTitle>What's Next?</CardTitle>
+            <CardTitle>What&apos;s Next?</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex gap-4">
@@ -186,7 +228,7 @@ function ConfirmationContent() {
               <div className="space-y-1">
                 <h3 className="font-medium">Order Confirmation Email</h3>
                 <p className="text-sm text-muted-foreground">
-                  We've sent a confirmation email to your email address with your order details.
+                  We&apos;ve sent a confirmation email to your email address with your order details.
                 </p>
               </div>
             </div>
@@ -200,7 +242,7 @@ function ConfirmationContent() {
               <div className="space-y-1">
                 <h3 className="font-medium">Order Processing</h3>
                 <p className="text-sm text-muted-foreground">
-                  Your order is being prepared. You'll receive another email when it ships.
+                  Your order is being prepared. You&apos;ll receive another email when it ships.
                 </p>
               </div>
             </div>
@@ -214,7 +256,7 @@ function ConfirmationContent() {
               <div className="space-y-1">
                 <h3 className="font-medium">Track Your Order</h3>
                 <p className="text-sm text-muted-foreground">
-                  Once shipped, you'll be able to track your package's delivery progress.
+                  Once shipped, you&apos;ll be able to track your package&apos;s delivery progress.
                 </p>
               </div>
             </div>

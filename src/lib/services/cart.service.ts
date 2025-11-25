@@ -490,8 +490,29 @@ export class CartService {
   // PRIVATE HELPERS
   // ============================================================================
 
-  private static transformCart(cart: any): CartWithItems {
-    const items: CartItemWithProduct[] = cart.items.map((item: any) => {
+  private static transformCart(cart: {
+    id: string;
+    userId: string | null;
+    sessionId: string | null;
+    storeId: string;
+    createdAt: Date;
+    updatedAt: Date;
+    items: Array<{
+      id: string;
+      cartId: string;
+      productId: string;
+      variantId: string | null;
+      quantity: number;
+      price: number;
+      productName: string;
+      variantName: string | null;
+      sku: string;
+      image: string | null;
+      variant?: { inventoryQty: number } | null;
+      product: { inventoryQty: number; trackInventory: boolean };
+    }>;
+  }): CartWithItems {
+    const items: CartItemWithProduct[] = cart.items.map((item) => {
       const availableStock = item.variant
         ? item.variant.inventoryQty
         : item.product.inventoryQty;

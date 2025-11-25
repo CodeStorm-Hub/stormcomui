@@ -257,7 +257,7 @@ export class CheckoutService {
   async calculateShipping(
     _storeId: string,
     shippingAddress: ShippingAddress,
-    cartItems: CartItem[]
+    cartItems: Array<{ price: number; quantity: number }>
   ): Promise<ShippingOption[]> {
     // TODO: Integrate with real shipping API (e.g., Shippo, EasyPost)
     const isDomestic = shippingAddress.country === 'BD' || shippingAddress.country === 'US';
@@ -451,7 +451,7 @@ export class CheckoutService {
         },
       });
 
-      // Reset cart totals
+      // Update cart last activity
       await prisma.cart.update({
         where: {
           userId_storeId: {
@@ -460,7 +460,6 @@ export class CheckoutService {
           },
         },
         data: {
-          subtotal: 0,
           lastActivityAt: new Date(),
         },
       });
