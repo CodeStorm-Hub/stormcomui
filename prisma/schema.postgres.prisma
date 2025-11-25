@@ -308,6 +308,7 @@ model Product {
   
   status      ProductStatus @default(DRAFT)
   publishedAt DateTime?
+  archivedAt  DateTime?     // For soft archiving (separate from deletedAt)
   isFeatured  Boolean       @default(false)
   
   variants    ProductVariant[]
@@ -322,9 +323,11 @@ model Product {
   
   @@unique([storeId, sku])
   @@unique([storeId, slug])
+  @@index([sku])                    // For inventory lookup by SKU
   @@index([storeId, status])
   @@index([storeId, categoryId])
   @@index([storeId, brandId])
+  @@index([storeId, createdAt])     // For sorted product lists
   @@index([categoryId, status])
   @@index([brandId, status])
 }
@@ -386,8 +389,10 @@ model Category {
   deletedAt   DateTime?
   
   @@unique([storeId, slug])
+  @@index([slug])                   // For fast category lookups
   @@index([storeId, parentId])
   @@index([storeId, isPublished])
+  @@index([storeId, slug])          // For multi-tenant queries
   @@index([parentId, sortOrder])
 }
 
@@ -509,6 +514,7 @@ model Order {
   shippingMethod String?
   trackingNumber String?
   trackingUrl    String?
+  estimatedDelivery DateTime?  // Estimated delivery date
   
   shippingAddress String? // JSON object
   billingAddress  String? // JSON object
@@ -532,6 +538,8 @@ model Order {
   @@index([storeId, customerId])
   @@index([storeId, status])
   @@index([storeId, createdAt])
+  @@index([storeId, status, createdAt])  // For admin dashboard filters
+  @@index([customerId, createdAt])        // For customer order history
   @@index([orderNumber])
   @@index([paymentStatus])
 }
