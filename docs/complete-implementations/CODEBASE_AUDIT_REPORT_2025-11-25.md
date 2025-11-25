@@ -16,7 +16,7 @@ This audit provides a comprehensive assessment of the StormCom codebase to infor
 | Category | Status | Details |
 |----------|--------|---------|
 | **Total API Routes** | 75 files | Across 28 API domains |
-| **Implementation Rate** | ~60% | 45 fully implemented, 17 partial/mock, 13 missing critical features |
+| **Implementation Rate** | 60% fully implemented | 45 complete, 17 partial/mock (23%), 13 stubbed (17%) |
 | **Database Models** | 21 existing | 12+ additional models needed for full e-commerce |
 | **Multi-Tenancy** | ✅ Strong | `storeId` scoping consistently applied |
 | **Service Layer** | ✅ Complete | 12 service classes implemented |
@@ -98,7 +98,7 @@ Total Route Files: 75
 
 | Domain | Endpoint | Method | Issue | Priority |
 |--------|----------|--------|-------|----------|
-| **Checkout** | `/api/checkout/payment-intent` | POST | Mock Stripe - TODO: real integration | 🔴 Critical |
+| **Checkout** | `/api/checkout/payment-intent` | POST | Placeholder mock - Stripe code commented out, returns mock data | 🔴 Critical |
 | **Checkout** | `/api/checkout/validate` | POST | Implemented but needs testing | 🟡 High |
 | **Checkout** | `/api/checkout/shipping` | POST | Implemented but needs testing | 🟡 High |
 | **Checkout** | `/api/checkout/complete` | POST | Implemented but needs testing | 🟡 High |
@@ -163,7 +163,7 @@ Total Route Files: 75
 
 ### 2.1 Current Schema Summary
 
-**Location**: `prisma/schema.sqlite.prisma`
+**Location**: `prisma/schema.sqlite.prisma` (SQLite for dev) / `prisma/schema.postgres.prisma` (PostgreSQL for prod)
 
 | Model | Status | Multi-tenant | Relations |
 |-------|--------|--------------|-----------|
@@ -401,12 +401,16 @@ enum CartStatus {
 
 **Products Service** (`src/lib/services/product.service.ts`):
 ```typescript
-async getProducts(storeId: string, filters: ProductFilters) {
+// Simplified example - actual method includes pagination
+async getProducts(storeId: string, filters: ProductFilters, page: number, perPage: number) {
   return prisma.product.findMany({
     where: {
       storeId, // ✅ Always filtered by tenant
+      deletedAt: null,
       ...filters
-    }
+    },
+    skip: (page - 1) * perPage,
+    take: perPage,
   });
 }
 ```
@@ -614,7 +618,8 @@ docs/                 40+ documentation files
 - `docs/IMPLEMENTATION_STATUS_AND_ROADMAP.md` - Detailed roadmap
 - `docs/research/codebase_feature_gap_analysis.md` - Gap analysis
 - `docs/complete-implementations/API_IMPLEMENTATION_STATUS.md` - API tracking
-- `prisma/schema.sqlite.prisma` - Database schema
+- `prisma/schema.sqlite.prisma` - Database schema (dev)
+- `prisma/schema.postgres.prisma` - Database schema (prod)
 
 ---
 
