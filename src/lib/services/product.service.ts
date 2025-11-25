@@ -1116,6 +1116,138 @@ export class ProductService {
   ): Promise<ProductWithRelations> {
     return this.updateInventory(productId, storeId, quantity, "Stock updated");
   }
+
+  // --------------------------------------------------------------------------
+  // BULK OPERATIONS
+  // --------------------------------------------------------------------------
+
+  /**
+   * CSV row data structure for bulk import
+   */
+  private parseCsvRow(row: Record<string, string>): Partial<CreateProductData> {
+    return {
+      name: row.name || row.Name || row.PRODUCT_NAME || '',
+      sku: row.sku || row.SKU || row.PRODUCT_SKU || `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      description: row.description || row.Description || row.DESCRIPTION || undefined,
+      shortDescription: row.short_description || row.shortDescription || undefined,
+      price: parseFloat(row.price || row.Price || row.PRICE || '0'),
+      compareAtPrice: row.compare_at_price || row.compareAtPrice ? parseFloat(row.compare_at_price || row.compareAtPrice) : undefined,
+      costPrice: row.cost_price || row.costPrice ? parseFloat(row.cost_price || row.costPrice) : undefined,
+      inventoryQty: parseInt(row.inventory_qty || row.inventoryQty || row.stock || row.Stock || '0', 10),
+      lowStockThreshold: parseInt(row.low_stock_threshold || row.lowStockThreshold || '5', 10),
+      weight: row.weight ? parseFloat(row.weight) : undefined,
+      barcode: row.barcode || row.Barcode || undefined,
+      status: (row.status || row.Status || 'DRAFT').toUpperCase() as 'DRAFT' | 'ACTIVE' | 'ARCHIVED',
+      isFeatured: row.is_featured === 'true' || row.isFeatured === 'true' || row.featured === 'true',
+      images: row.images ? row.images.split(',').map((url: string) => url.trim()).filter(Boolean) : [],
+    };
+  }
+
+  /**
+   * Bulk import products from CSV data
+   * @param storeId - Store ID for multi-tenant isolation
+   * @param csvRows - Array of parsed CSV row objects
+   * @returns Import result with success count, error count, and error details
+   */
+  async bulkImport(
+    storeId: string,
+    csvRows: Record<string, string>[]
+  ): Promise<{
+    successCount: number;
+    errorCount: number;
+    errors: Array<{ row: number; error: string }>;
+    products: ProductWithRelations[];
+  }> {
+    const results: ProductWithRelations[] = [];
+    const errors: Array<{ row: number; error: string }> = [];
+    let successCount = 0;
+    let errorCount = 0;
+
+    // Process in batches of 100 for performance
+    const batchSize = 100;
+    const batches = [];
+    for (let i = 0; i < csvRows.length; i += batchSize) {
+      batches.push(csvRows.slice(i, i + batchSize));
+    }
+
+    for (const batch of batches) {
+      // Use transaction for each batch
+      await prisma.$transaction(async (tx) => {
+        for (let i = 0; i < batch.length; i++) {
+          const rowIndex = batches.indexOf(batch) * batchSize + i + 1;
+          const row = batch[i];
+          
+          try {
+            const productData = this.parseCsvRow(row);
+            
+            // Validate required fields
+            if (!productData.name) {
+              throw new Error('Product name is required');
+            }
+            if (productData.price === undefined || productData.price < 0) {
+              throw new Error('Valid price is required');
+            }
+
+            // Generate unique slug
+            const slug = await this.generateUniqueSlug(storeId, productData.name);
+
+            // Calculate inventory status
+            const inventoryStatus = this.calculateInventoryStatus(
+              productData.inventoryQty || 0,
+              productData.lowStockThreshold || 5
+            );
+
+            // Create product
+            const product = await tx.product.create({
+              data: {
+                store: { connect: { id: storeId } },
+                name: productData.name,
+                slug,
+                description: productData.description,
+                shortDescription: productData.shortDescription,
+                price: productData.price,
+                compareAtPrice: productData.compareAtPrice,
+                costPrice: productData.costPrice,
+                sku: productData.sku!,
+                barcode: productData.barcode,
+                trackInventory: true,
+                inventoryQty: productData.inventoryQty || 0,
+                lowStockThreshold: productData.lowStockThreshold || 5,
+                inventoryStatus,
+                weight: productData.weight,
+                images: JSON.stringify(productData.images || []),
+                thumbnailUrl: productData.images?.[0] || null,
+                status: productData.status as ProductStatus || ProductStatus.DRAFT,
+                isFeatured: productData.isFeatured || false,
+              },
+              include: {
+                category: { select: { id: true, name: true, slug: true } },
+                brand: { select: { id: true, name: true, slug: true } },
+                variants: true,
+                _count: { select: { orderItems: true, reviews: true } },
+              },
+            });
+
+            results.push(this.normalizeProductFields(product) as unknown as ProductWithRelations);
+            successCount++;
+          } catch (err) {
+            errorCount++;
+            errors.push({
+              row: rowIndex,
+              error: err instanceof Error ? err.message : 'Unknown error',
+            });
+          }
+        }
+      });
+    }
+
+    return {
+      successCount,
+      errorCount,
+      errors,
+      products: results,
+    };
+  }
 }
 
 // ============================================================================
