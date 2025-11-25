@@ -58,7 +58,7 @@ export function CartList() {
   };
 
   const handleCheckout = () => {
-    router.push('/dashboard/checkout');
+    router.push('/checkout');
   };
 
   if (loading) {

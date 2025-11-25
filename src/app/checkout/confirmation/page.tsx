@@ -29,7 +29,9 @@ function ConfirmationContent() {
     // Fetch real order data
     const fetchOrder = async () => {
       try {
-        const response = await fetch(`/api/orders/${orderId}`);
+        // TODO: Get actual storeId from user's organization/store
+        const storeId = 'clqm1j4k00000l8dw8z8r8z8r';
+        const response = await fetch(`/api/orders/${orderId}?storeId=${storeId}`);
         if (!response.ok) {
           throw new Error('Order not found');
         }

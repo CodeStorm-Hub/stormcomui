@@ -78,7 +78,7 @@ export function NavMain({
                       {item.items?.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton asChild>
-                            <Link href={subItem.url} className="flex items-center justify-between">
+                            <Link href={subItem.url}>
                               <span>{subItem.title}</span>
                               {subItem.badge && <span className="ml-auto">{subItem.badge}</span>}
                             </Link>
