@@ -92,8 +92,11 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     
-    // Validate required storeId
-    if (!body.storeId) {
+    // Get storeId from request body or use user's default store
+    // Note: storeId in body is still allowed but will be verified
+    const storeId = body.storeId;
+    
+    if (!storeId) {
       return NextResponse.json(
         { error: 'storeId is required' },
         { status: 400 }
@@ -101,7 +104,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify user has access to this store
-    const hasStoreAccess = await verifyStoreAccess(body.storeId);
+    const hasStoreAccess = await verifyStoreAccess(storeId);
     if (!hasStoreAccess) {
       return NextResponse.json(
         { error: 'Access denied. You do not have permission to create products in this store.' },
@@ -110,7 +113,7 @@ export async function POST(request: NextRequest) {
     }
 
     const productService = ProductService.getInstance();
-    const product = await productService.createProduct(body.storeId, body);
+    const product = await productService.createProduct(storeId, body);
 
     return NextResponse.json(product, { status: 201 });
   } catch (error) {

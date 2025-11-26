@@ -83,7 +83,10 @@ export async function PATCH(
     const params = await context.params;
     const body = await request.json();
     
-    if (!body.storeId) {
+    // Get storeId from request body
+    const storeId = body.storeId;
+    
+    if (!storeId) {
       return NextResponse.json(
         { error: 'storeId is required' },
         { status: 400 }
@@ -91,7 +94,7 @@ export async function PATCH(
     }
 
     // Verify user has access to this store
-    const hasStoreAccess = await verifyStoreAccess(body.storeId);
+    const hasStoreAccess = await verifyStoreAccess(storeId);
     if (!hasStoreAccess) {
       return NextResponse.json(
         { error: 'Access denied. You do not have permission to modify products in this store.' },
@@ -102,7 +105,7 @@ export async function PATCH(
     const productService = ProductService.getInstance();
     const product = await productService.updateProduct(
       params.id,
-      body.storeId,
+      storeId,
       body
     );
 
@@ -209,7 +212,10 @@ export async function PUT(
     const params = await context.params;
     const body = await request.json();
     
-    if (!body.storeId) {
+    // Get storeId from request body
+    const storeId = body.storeId;
+    
+    if (!storeId) {
       return NextResponse.json(
         { error: 'storeId is required' },
         { status: 400 }
@@ -217,7 +223,7 @@ export async function PUT(
     }
 
     // Verify user has access to this store
-    const hasStoreAccess = await verifyStoreAccess(body.storeId);
+    const hasStoreAccess = await verifyStoreAccess(storeId);
     if (!hasStoreAccess) {
       return NextResponse.json(
         { error: 'Access denied. You do not have permission to modify products in this store.' },
@@ -228,7 +234,7 @@ export async function PUT(
     const productService = ProductService.getInstance();
     const product = await productService.updateProduct(
       params.id,
-      body.storeId,
+      storeId,
       body
     );
 
