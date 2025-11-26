@@ -345,7 +345,6 @@ model Product {
   @@index([storeId, brandId])
   @@index([categoryId, status])
   @@index([brandId, status])
-  @@index([sku]) // Fast inventory lookup by SKU
   @@index([storeId, categoryId, status]) // Filtered product lists
   @@index([storeId, createdAt]) // Sorted product lists (newest first)
 }
