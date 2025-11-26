@@ -61,6 +61,24 @@ export interface ProductListResult {
 // VALIDATION SCHEMAS
 // ============================================================================
 
+// Variant validation schema
+export const variantSchema = z.object({
+  id: z.string().cuid().optional(), // Optional for new variants
+  name: z.string().min(1, "Variant name is required").max(255),
+  sku: z.string().min(1, "Variant SKU is required").max(100),
+  barcode: z.string().max(100).optional().nullable(),
+  price: z.number().min(0).optional().nullable(),
+  compareAtPrice: z.number().min(0).optional().nullable(),
+  inventoryQty: z.number().int().min(0).default(0),
+  lowStockThreshold: z.number().int().min(0).default(5),
+  weight: z.number().min(0).optional().nullable(),
+  image: z.string().url().optional().nullable(),
+  options: z.union([z.string(), z.record(z.string(), z.string())]).default("{}"), // JSON string or object
+  isDefault: z.boolean().default(false),
+});
+
+export type VariantData = z.infer<typeof variantSchema>;
+
 export const createProductSchema = z.object({
   name: z.string().min(1, "Product name is required").max(255),
   slug: z.string()
@@ -89,6 +107,8 @@ export const createProductSchema = z.object({
   metaKeywords: z.string().optional().nullable(),
   status: z.nativeEnum(ProductStatus).default(ProductStatus.DRAFT),
   isFeatured: z.boolean().default(false),
+  // Variants support (min 1, max 100)
+  variants: z.array(variantSchema).min(0).max(100).optional(),
 });
 
 export const updateProductSchema = createProductSchema.partial().extend({
@@ -423,6 +443,28 @@ export class ProductService {
       productData.brand = { connect: { id: validatedData.brandId } };
     }
 
+    // Add variants if provided
+    if (validatedData.variants && validatedData.variants.length > 0) {
+      // Validate variant SKUs are unique
+      await this.validateVariantSkus(validatedData.variants.map(v => v.sku));
+      
+      productData.variants = {
+        create: validatedData.variants.map((variant, index) => ({
+          name: variant.name,
+          sku: variant.sku,
+          barcode: variant.barcode,
+          price: variant.price,
+          compareAtPrice: variant.compareAtPrice,
+          inventoryQty: variant.inventoryQty ?? 0,
+          lowStockThreshold: variant.lowStockThreshold ?? 5,
+          weight: variant.weight,
+          image: variant.image,
+          options: typeof variant.options === 'string' ? variant.options : JSON.stringify(variant.options),
+          isDefault: variant.isDefault ?? (index === 0), // First variant is default if not specified
+        })),
+      };
+    }
+
     const product = await prisma.product.create({
       data: productData,
       include: {
@@ -480,8 +522,8 @@ export class ProductService {
       inventoryStatus = this.calculateInventoryStatus(validatedData.inventoryQty, lowStockThreshold);
     }
 
-    // Prepare update data (exclude JSON fields like images from direct spread to satisfy Prisma types)
-    const { images: imagesArr, ...rest } = validatedData as UpdateProductData & { images?: string[] };
+    // Prepare update data (exclude JSON fields like images and variants from direct spread to satisfy Prisma types)
+    const { images: imagesArr, variants: variantsArr, ...rest } = validatedData as UpdateProductData & { images?: string[]; variants?: VariantData[] };
     const updateData: Prisma.ProductUpdateInput = {
       ...rest,
       inventoryStatus,
@@ -513,6 +555,69 @@ export class ProductService {
       updateData.brand = validatedData.brandId
         ? { connect: { id: validatedData.brandId } }
         : { disconnect: true };
+    }
+
+    // Handle variants update
+    if (variantsArr !== undefined) {
+      // Validate variant SKUs are unique (excluding existing variants of this product)
+      const newVariantSkus = variantsArr
+        .filter(v => !v.id) // Only new variants (no id)
+        .map(v => v.sku);
+      if (newVariantSkus.length > 0) {
+        await this.validateVariantSkus(newVariantSkus, productId);
+      }
+
+      // Get existing variant IDs for the product
+      const existingVariants = await prisma.productVariant.findMany({
+        where: { productId },
+        select: { id: true, sku: true },
+      });
+      const existingVariantIds = new Set(existingVariants.map(v => v.id));
+
+      // Separate variants into updates and creates
+      const variantsToUpdate = variantsArr.filter(v => v.id && existingVariantIds.has(v.id));
+      const variantsToCreate = variantsArr.filter(v => !v.id);
+      const variantIdsToKeep = new Set(variantsToUpdate.map(v => v.id));
+      const variantIdsToDelete = existingVariants
+        .filter(v => !variantIdsToKeep.has(v.id))
+        .map(v => v.id);
+
+      // Build the variant update operations
+      updateData.variants = {
+        // Delete variants that are no longer in the list
+        deleteMany: variantIdsToDelete.length > 0 ? { id: { in: variantIdsToDelete } } : undefined,
+        // Update existing variants
+        updateMany: variantsToUpdate.map(variant => ({
+          where: { id: variant.id! },
+          data: {
+            name: variant.name,
+            sku: variant.sku,
+            barcode: variant.barcode,
+            price: variant.price,
+            compareAtPrice: variant.compareAtPrice,
+            inventoryQty: variant.inventoryQty ?? 0,
+            lowStockThreshold: variant.lowStockThreshold ?? 5,
+            weight: variant.weight,
+            image: variant.image,
+            options: typeof variant.options === 'string' ? variant.options : JSON.stringify(variant.options),
+            isDefault: variant.isDefault ?? false,
+          },
+        })),
+        // Create new variants
+        create: variantsToCreate.map((variant, index) => ({
+          name: variant.name,
+          sku: variant.sku,
+          barcode: variant.barcode,
+          price: variant.price,
+          compareAtPrice: variant.compareAtPrice,
+          inventoryQty: variant.inventoryQty ?? 0,
+          lowStockThreshold: variant.lowStockThreshold ?? 5,
+          weight: variant.weight,
+          image: variant.image,
+          options: typeof variant.options === 'string' ? variant.options : JSON.stringify(variant.options),
+          isDefault: variant.isDefault ?? (variantsToUpdate.length === 0 && index === 0),
+        })),
+      };
     }
 
     // Remove id from update data
@@ -1059,6 +1164,36 @@ export class ProductService {
     }
   }
 
+  /**
+   * Validate that variant SKUs are unique globally
+   * @param skus - Array of SKUs to validate
+   * @param excludeProductId - Product ID to exclude from validation (for updates)
+   */
+  private async validateVariantSkus(skus: string[], excludeProductId?: string): Promise<void> {
+    if (skus.length === 0) return;
+
+    // Check for duplicate SKUs in the input array itself
+    const uniqueSkus = new Set(skus);
+    if (uniqueSkus.size !== skus.length) {
+      const duplicates = skus.filter((sku, index) => skus.indexOf(sku) !== index);
+      throw new Error(`Duplicate variant SKUs provided: ${[...new Set(duplicates)].join(', ')}`);
+    }
+
+    // Check if any SKU already exists in the database
+    const existingVariants = await prisma.productVariant.findMany({
+      where: {
+        sku: { in: skus },
+        ...(excludeProductId && { productId: { not: excludeProductId } }),
+      },
+      select: { sku: true },
+    });
+
+    if (existingVariants.length > 0) {
+      const existingSkus = existingVariants.map(v => v.sku);
+      throw new Error(`Variant SKUs already exist: ${existingSkus.join(', ')}`);
+    }
+  }
+
   // --------------------------------------------------------------------------
   // CONVENIENCE ALIASES
   // --------------------------------------------------------------------------
@@ -1115,6 +1250,115 @@ export class ProductService {
     quantity: number
   ): Promise<ProductWithRelations> {
     return this.updateInventory(productId, storeId, quantity, "Stock updated");
+  }
+
+  // --------------------------------------------------------------------------
+  // BULK OPERATIONS
+  // --------------------------------------------------------------------------
+
+  /**
+   * Bulk import products from parsed CSV data
+   * @param storeId - Store ID for multi-tenant isolation
+   * @param records - Array of product records to import
+   * @returns Object containing imported count and any errors
+   */
+  async bulkImport(
+    storeId: string,
+    records: Array<{
+      name: string;
+      sku: string;
+      price: number | string;
+      description?: string;
+      categoryId?: string;
+      brandId?: string;
+      inventoryQty?: number | string;
+      status?: string;
+      images?: string;
+    }>
+  ): Promise<{ imported: number; errors: Array<{ row: number; error: string }> }> {
+    const errors: Array<{ row: number; error: string }> = [];
+    let imported = 0;
+
+    // Process in batches for better performance (batch size: 50)
+    const batchSize = 50;
+    const batches = [];
+    for (let i = 0; i < records.length; i += batchSize) {
+      batches.push(records.slice(i, i + batchSize));
+    }
+
+    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+      const batch = batches[batchIndex];
+      const batchStartRow = batchIndex * batchSize;
+
+      // Prepare product creation data
+      const productPromises = batch.map(async (record, index) => {
+        const rowNumber = batchStartRow + index + 1;
+        try {
+          // Parse and validate record
+          const price = typeof record.price === 'string' ? parseFloat(record.price) : record.price;
+          const inventoryQty = record.inventoryQty 
+            ? (typeof record.inventoryQty === 'string' ? parseInt(record.inventoryQty) : record.inventoryQty)
+            : 0;
+
+          if (isNaN(price) || price < 0) {
+            throw new Error(`Invalid price: ${record.price}`);
+          }
+
+          // Parse images (comma-separated URLs or JSON array)
+          let images: string[] = [];
+          if (record.images) {
+            try {
+              images = JSON.parse(record.images);
+            } catch {
+              // Try comma-separated
+              images = record.images.split(',').map(url => url.trim()).filter(url => url.length > 0);
+            }
+          }
+
+          // Map status string to enum
+          let status: ProductStatus = ProductStatus.DRAFT;
+          if (record.status) {
+            const statusUpper = record.status.toUpperCase();
+            if (statusUpper === 'ACTIVE') status = ProductStatus.ACTIVE;
+            else if (statusUpper === 'ARCHIVED') status = ProductStatus.ARCHIVED;
+          }
+
+          // Build product data - schema will apply defaults for missing optional fields
+          const productData = {
+            name: record.name,
+            sku: record.sku,
+            price,
+            description: record.description,
+            categoryId: record.categoryId || undefined,
+            brandId: record.brandId || undefined,
+            inventoryQty: isNaN(inventoryQty) ? 0 : inventoryQty,
+            status,
+            images,
+          };
+
+          await this.createProduct(storeId, productData as CreateProductData);
+          return { success: true, row: rowNumber };
+        } catch (error) {
+          return { 
+            success: false, 
+            row: rowNumber, 
+            error: error instanceof Error ? error.message : 'Unknown error' 
+          };
+        }
+      });
+
+      const results = await Promise.all(productPromises);
+
+      for (const result of results) {
+        if (result.success) {
+          imported++;
+        } else {
+          errors.push({ row: result.row, error: result.error || 'Unknown error' });
+        }
+      }
+    }
+
+    return { imported, errors };
   }
 }
 

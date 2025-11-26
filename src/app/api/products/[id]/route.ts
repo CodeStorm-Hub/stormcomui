@@ -139,10 +139,14 @@ export async function DELETE(
 
     const productService = ProductService.getInstance();
     
-    // Soft delete (permanent delete not implemented in current service)
+    // Soft delete (sets deletedAt timestamp)
     await productService.deleteProduct(params.id, storeId);
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ 
+      success: true,
+      message: 'Product deleted successfully',
+      deletedAt: new Date().toISOString()
+    });
   } catch (error) {
     console.error('DELETE /api/products/[id] error:', error);
     
@@ -155,6 +159,62 @@ export async function DELETE(
 
     return NextResponse.json(
       { error: 'Failed to delete product' },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT /api/products/[id] - Full product update (replaces all fields)
+export async function PUT(
+  request: NextRequest,
+  context: RouteContext
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const params = await context.params;
+    const body = await request.json();
+    
+    if (!body.storeId) {
+      return NextResponse.json(
+        { error: 'storeId is required' },
+        { status: 400 }
+      );
+    }
+
+    const productService = ProductService.getInstance();
+    const product = await productService.updateProduct(
+      params.id,
+      body.storeId,
+      body
+    );
+
+    return NextResponse.json(product);
+  } catch (error) {
+    console.error('PUT /api/products/[id] error:', error);
+    
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Validation error', details: error.issues },
+        { status: 400 }
+      );
+    }
+    
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      { error: 'Failed to update product' },
       { status: 500 }
     );
   }

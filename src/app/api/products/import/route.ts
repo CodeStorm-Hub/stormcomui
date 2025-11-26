@@ -1,0 +1,158 @@
+// src/app/api/products/import/route.ts
+// Product CSV Bulk Import API
+
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
+import { ProductService } from '@/lib/services/product.service';
+
+// Simple CSV parser (handles quoted fields and commas within quotes)
+function parseCSV(text: string): Array<Record<string, string>> {
+  const lines = text.split('\n').filter(line => line.trim());
+  if (lines.length < 2) {
+    return [];
+  }
+
+  // Parse header
+  const headers = parseCSVLine(lines[0]);
+  
+  // Parse data rows
+  const records: Array<Record<string, string>> = [];
+  for (let i = 1; i < lines.length; i++) {
+    const values = parseCSVLine(lines[i]);
+    if (values.length > 0) {
+      const record: Record<string, string> = {};
+      headers.forEach((header, index) => {
+        record[header.trim()] = values[index]?.trim() || '';
+      });
+      records.push(record);
+    }
+  }
+
+  return records;
+}
+
+// Parse a single CSV line, handling quoted fields
+function parseCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        // Escaped quote
+        current += '"';
+        i++;
+      } else {
+        // Toggle quote mode
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      result.push(current);
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  
+  // Add last field
+  result.push(current);
+  
+  return result;
+}
+
+// POST /api/products/import - Bulk import products from CSV
+export async function POST(request: NextRequest) {
+  try {
+    // Authentication
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // Get form data
+    const formData = await request.formData();
+    const file = formData.get('file') as File | null;
+    const storeId = formData.get('storeId') as string | null;
+
+    if (!file) {
+      return NextResponse.json(
+        { error: 'No file provided' },
+        { status: 400 }
+      );
+    }
+
+    if (!storeId) {
+      return NextResponse.json(
+        { error: 'storeId is required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate file type
+    const fileName = file.name.toLowerCase();
+    if (!fileName.endsWith('.csv')) {
+      return NextResponse.json(
+        { error: 'Invalid file type. Only CSV files are supported.' },
+        { status: 400 }
+      );
+    }
+
+    // Read and parse CSV
+    const text = await file.text();
+    const records = parseCSV(text);
+
+    if (records.length === 0) {
+      return NextResponse.json(
+        { error: 'CSV file is empty or has no data rows' },
+        { status: 400 }
+      );
+    }
+
+    // Validate required columns
+    const requiredColumns = ['name', 'sku', 'price'];
+    const firstRecord = records[0];
+    const missingColumns = requiredColumns.filter(col => !(col in firstRecord));
+    
+    if (missingColumns.length > 0) {
+      return NextResponse.json(
+        { error: `Missing required columns: ${missingColumns.join(', ')}` },
+        { status: 400 }
+      );
+    }
+
+    // Import products
+    const productService = ProductService.getInstance();
+    // Cast records to the expected type - validation happens in bulkImport
+    const result = await productService.bulkImport(storeId, records as Array<{
+      name: string;
+      sku: string;
+      price: number | string;
+      description?: string;
+      categoryId?: string;
+      brandId?: string;
+      inventoryQty?: number | string;
+      status?: string;
+      images?: string;
+    }>);
+
+    return NextResponse.json({
+      success: true,
+      imported: result.imported,
+      total: records.length,
+      errors: result.errors,
+    });
+  } catch (error) {
+    console.error('POST /api/products/import error:', error);
+    return NextResponse.json(
+      { error: 'Failed to import products' },
+      { status: 500 }
+    );
+  }
+}
