@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
+import { verifyStoreAccess } from '@/lib/get-current-user';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
@@ -14,12 +15,12 @@ import { existsSync } from 'fs';
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 // Allowed image MIME types
+// Note: SVG is intentionally excluded to prevent stored XSS attacks
 const ALLOWED_TYPES = [
   'image/jpeg',
   'image/png',
   'image/gif',
   'image/webp',
-  'image/svg+xml',
 ];
 
 // Validate storeId to prevent directory traversal attacks
@@ -74,6 +75,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Invalid storeId format' },
         { status: 400 }
+      );
+    }
+
+    // Verify user has access to this store (multi-tenant security)
+    const hasStoreAccess = await verifyStoreAccess(storeId);
+    if (!hasStoreAccess) {
+      return NextResponse.json(
+        { error: 'Access denied. You do not have permission to upload to this store.' },
+        { status: 403 }
       );
     }
 
@@ -166,6 +176,15 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json(
         { error: 'Invalid storeId format' },
         { status: 400 }
+      );
+    }
+
+    // Verify user has access to this store (multi-tenant security)
+    const hasStoreAccess = await verifyStoreAccess(storeId);
+    if (!hasStoreAccess) {
+      return NextResponse.json(
+        { error: 'Access denied. You do not have permission to upload to this store.' },
+        { status: 403 }
       );
     }
 

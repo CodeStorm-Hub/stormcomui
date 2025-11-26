@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
+import { verifyStoreAccess } from '@/lib/get-current-user';
 import { ProductService } from '@/lib/services/product.service';
 import { z } from 'zod';
 
@@ -114,6 +115,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'storeId is required' },
         { status: 400 }
+      );
+    }
+
+    // Verify user has access to this store (multi-tenant security)
+    const hasStoreAccess = await verifyStoreAccess(storeId);
+    if (!hasStoreAccess) {
+      return NextResponse.json(
+        { error: 'Access denied. You do not have permission to import products to this store.' },
+        { status: 403 }
       );
     }
 

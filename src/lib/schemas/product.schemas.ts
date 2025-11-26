@@ -141,9 +141,11 @@ export const productResponseSchema = z.object({
 
 /**
  * Product create request schema
+ * Note: storeId is NOT included here - it should be derived from the authenticated
+ * user's context (session) in route handlers to prevent tenant spoofing attacks.
+ * The storeId is passed separately to the service layer.
  */
 export const productCreateSchema = z.object({
-  storeId: z.string(),
   name: z.string().min(1).max(255),
   slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
   description: z.string().optional(),

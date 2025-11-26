@@ -559,20 +559,13 @@ export class ProductService {
 
     // Handle variants update
     if (variantsArr !== undefined) {
-      // Validate variant SKUs are unique (excluding existing variants of this product)
-      const newVariantSkus = variantsArr
-        .filter(v => !v.id) // Only new variants (no id)
-        .map(v => v.sku);
-      if (newVariantSkus.length > 0) {
-        await this.validateVariantSkus(newVariantSkus, productId);
-      }
-
       // Get existing variant IDs for the product
       const existingVariants = await prisma.productVariant.findMany({
         where: { productId },
         select: { id: true, sku: true },
       });
       const existingVariantIds = new Set(existingVariants.map(v => v.id));
+      const existingVariantSkus = new Map(existingVariants.map(v => [v.id, v.sku]));
 
       // Separate variants into updates and creates
       const variantsToUpdate = variantsArr.filter(v => v.id && existingVariantIds.has(v.id));
@@ -581,6 +574,34 @@ export class ProductService {
       const variantIdsToDelete = existingVariants
         .filter(v => !variantIdsToKeep.has(v.id))
         .map(v => v.id);
+
+      // Validate variant SKUs for new variants
+      const newVariantSkus = variantsToCreate.map(v => v.sku);
+      if (newVariantSkus.length > 0) {
+        await this.validateVariantSkus(newVariantSkus, productId);
+      }
+
+      // Validate SKU changes for existing variants being updated
+      // Only check SKUs that are actually changing
+      const changedSkuVariants = variantsToUpdate.filter(v => {
+        const oldSku = existingVariantSkus.get(v.id!);
+        return oldSku !== v.sku;
+      });
+      
+      if (changedSkuVariants.length > 0) {
+        const changedSkus = changedSkuVariants.map(v => v.sku);
+        // Check if any changed SKU conflicts with other variants (excluding the ones being updated)
+        const variantIdsBeingUpdated = changedSkuVariants.map(v => v.id!);
+        await this.validateVariantSkusForUpdate(changedSkus, productId, variantIdsBeingUpdated);
+      }
+
+      // Check for duplicate SKUs within the request itself (new + updated)
+      const allRequestSkus = [...newVariantSkus, ...variantsToUpdate.map(v => v.sku)];
+      const uniqueRequestSkus = new Set(allRequestSkus);
+      if (uniqueRequestSkus.size !== allRequestSkus.length) {
+        const duplicates = allRequestSkus.filter((sku, index) => allRequestSkus.indexOf(sku) !== index);
+        throw new Error(`Duplicate variant SKUs in request: ${[...new Set(duplicates)].join(', ')}`);
+      }
 
       // Use a transaction to handle variant updates individually
       await prisma.$transaction(async (tx) => {
@@ -1204,6 +1225,36 @@ export class ProductService {
     if (existingVariants.length > 0) {
       const existingSkus = existingVariants.map(v => v.sku);
       throw new Error(`Variant SKUs already exist: ${existingSkus.join(', ')}`);
+    }
+  }
+
+  /**
+   * Validate that updated variant SKUs don't conflict with other variants
+   * This is used when existing variants change their SKU value
+   * @param skus - Array of new SKU values for variants being updated
+   * @param productId - Product ID the variants belong to
+   * @param excludeVariantIds - Variant IDs to exclude (the ones being updated)
+   */
+  private async validateVariantSkusForUpdate(
+    skus: string[], 
+    productId: string, 
+    excludeVariantIds: string[]
+  ): Promise<void> {
+    if (skus.length === 0) return;
+
+    // Check if any of the new SKUs conflict with existing variants
+    // (excluding the variants that are being updated themselves)
+    const conflictingVariants = await prisma.productVariant.findMany({
+      where: {
+        sku: { in: skus },
+        id: { notIn: excludeVariantIds },
+      },
+      select: { sku: true },
+    });
+
+    if (conflictingVariants.length > 0) {
+      const conflictingSkus = conflictingVariants.map(v => v.sku);
+      throw new Error(`Cannot update variant SKU(s) - already in use: ${conflictingSkus.join(', ')}`);
     }
   }
 

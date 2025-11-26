@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
+import { verifyStoreAccess } from '@/lib/get-current-user';
 import { ProductService } from '@/lib/services/product.service';
 import { z } from 'zod';
 
@@ -27,6 +28,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         { error: 'storeId is required' },
         { status: 400 }
+      );
+    }
+
+    // Verify user has access to this store
+    const hasStoreAccess = await verifyStoreAccess(storeId);
+    if (!hasStoreAccess) {
+      return NextResponse.json(
+        { error: 'Access denied. You do not have permission to access this store.' },
+        { status: 403 }
       );
     }
 
@@ -87,6 +97,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'storeId is required' },
         { status: 400 }
+      );
+    }
+
+    // Verify user has access to this store
+    const hasStoreAccess = await verifyStoreAccess(body.storeId);
+    if (!hasStoreAccess) {
+      return NextResponse.json(
+        { error: 'Access denied. You do not have permission to create products in this store.' },
+        { status: 403 }
       );
     }
 
