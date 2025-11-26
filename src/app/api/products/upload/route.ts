@@ -22,12 +22,20 @@ const ALLOWED_TYPES = [
   'image/svg+xml',
 ];
 
+// Validate storeId to prevent directory traversal attacks
+function isValidStoreId(storeId: string): boolean {
+  // storeId should be alphanumeric with optional hyphens (cuid format)
+  return /^[a-zA-Z0-9-_]+$/.test(storeId) && storeId.length <= 100;
+}
+
 // Generate a unique filename
 function generateUniqueFileName(originalName: string): string {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 8);
   const extension = originalName.split('.').pop()?.toLowerCase() || 'jpg';
-  return `${timestamp}-${random}.${extension}`;
+  // Sanitize extension to prevent path traversal
+  const safeExtension = extension.replace(/[^a-z0-9]/g, '');
+  return `${timestamp}-${random}.${safeExtension || 'jpg'}`;
 }
 
 // POST /api/products/upload - Upload product image
@@ -57,6 +65,14 @@ export async function POST(request: NextRequest) {
     if (!storeId) {
       return NextResponse.json(
         { error: 'storeId is required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate storeId to prevent directory traversal attacks
+    if (!isValidStoreId(storeId)) {
+      return NextResponse.json(
+        { error: 'Invalid storeId format' },
         { status: 400 }
       );
     }
@@ -141,6 +157,14 @@ export async function PUT(request: NextRequest) {
     if (!storeId) {
       return NextResponse.json(
         { error: 'storeId is required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate storeId to prevent directory traversal attacks
+    if (!isValidStoreId(storeId)) {
+      return NextResponse.json(
+        { error: 'Invalid storeId format' },
         { status: 400 }
       );
     }

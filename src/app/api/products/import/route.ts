@@ -5,6 +5,28 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { ProductService } from '@/lib/services/product.service';
+import { z } from 'zod';
+
+// Zod schema for CSV record validation
+const csvRecordSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  sku: z.string().min(1, 'SKU is required'),
+  price: z.union([z.string(), z.number()]).transform((val) => {
+    const num = typeof val === 'string' ? parseFloat(val) : val;
+    if (isNaN(num) || num < 0) throw new Error('Invalid price');
+    return num;
+  }),
+  description: z.string().optional(),
+  categoryId: z.string().optional(),
+  brandId: z.string().optional(),
+  inventoryQty: z.union([z.string(), z.number()]).optional().transform((val) => {
+    if (val === undefined || val === '') return 0;
+    const num = typeof val === 'string' ? parseInt(val) : val;
+    return isNaN(num) ? 0 : Math.max(0, num);
+  }),
+  status: z.string().optional(),
+  images: z.string().optional(),
+}).passthrough(); // Allow additional columns
 
 // Simple CSV parser (handles quoted fields and commas within quotes)
 function parseCSV(text: string): Array<Record<string, string>> {
@@ -127,10 +149,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Import products
-    const productService = ProductService.getInstance();
-    // Cast records to the expected type - validation happens in bulkImport
-    const result = await productService.bulkImport(storeId, records as Array<{
+    // Validate and transform records using Zod schema
+    const validatedRecords: Array<{
       name: string;
       sku: string;
       price: number | string;
@@ -140,13 +160,47 @@ export async function POST(request: NextRequest) {
       inventoryQty?: number | string;
       status?: string;
       images?: string;
-    }>);
+    }> = [];
+    const validationErrors: Array<{ row: number; error: string }> = [];
+
+    for (let i = 0; i < records.length; i++) {
+      const result = csvRecordSchema.safeParse(records[i]);
+      if (result.success) {
+        validatedRecords.push(result.data);
+      } else {
+        // Zod 4 uses issues instead of errors
+        const errorMessages = result.error.issues 
+          ? result.error.issues.map((issue: { message: string }) => issue.message).join(', ')
+          : 'Validation failed';
+        validationErrors.push({
+          row: i + 1,
+          error: errorMessages,
+        });
+      }
+    }
+
+    // If all records failed validation, return early
+    if (validatedRecords.length === 0) {
+      return NextResponse.json({
+        success: false,
+        imported: 0,
+        total: records.length,
+        errors: validationErrors,
+      });
+    }
+
+    // Import validated products
+    const productService = ProductService.getInstance();
+    const result = await productService.bulkImport(storeId, validatedRecords);
+
+    // Combine validation errors with import errors
+    const allErrors = [...validationErrors, ...result.errors];
 
     return NextResponse.json({
-      success: true,
+      success: result.imported > 0,
       imported: result.imported,
       total: records.length,
-      errors: result.errors,
+      errors: allErrors,
     });
   } catch (error) {
     console.error('POST /api/products/import error:', error);

@@ -107,7 +107,7 @@ export const createProductSchema = z.object({
   metaKeywords: z.string().optional().nullable(),
   status: z.nativeEnum(ProductStatus).default(ProductStatus.DRAFT),
   isFeatured: z.boolean().default(false),
-  // Variants support (min 1, max 100)
+  // Variants support (min 0, max 100)
   variants: z.array(variantSchema).min(0).max(100).optional(),
 });
 
@@ -582,42 +582,55 @@ export class ProductService {
         .filter(v => !variantIdsToKeep.has(v.id))
         .map(v => v.id);
 
-      // Build the variant update operations
-      updateData.variants = {
+      // Use a transaction to handle variant updates individually
+      await prisma.$transaction(async (tx) => {
         // Delete variants that are no longer in the list
-        deleteMany: variantIdsToDelete.length > 0 ? { id: { in: variantIdsToDelete } } : undefined,
-        // Update existing variants
-        updateMany: variantsToUpdate.map(variant => ({
-          where: { id: variant.id! },
-          data: {
-            name: variant.name,
-            sku: variant.sku,
-            barcode: variant.barcode,
-            price: variant.price,
-            compareAtPrice: variant.compareAtPrice,
-            inventoryQty: variant.inventoryQty ?? 0,
-            lowStockThreshold: variant.lowStockThreshold ?? 5,
-            weight: variant.weight,
-            image: variant.image,
-            options: typeof variant.options === 'string' ? variant.options : JSON.stringify(variant.options),
-            isDefault: variant.isDefault ?? false,
-          },
-        })),
+        if (variantIdsToDelete.length > 0) {
+          await tx.productVariant.deleteMany({
+            where: { id: { in: variantIdsToDelete } },
+          });
+        }
+
+        // Update existing variants individually (updateMany can't handle different data per record)
+        for (const variant of variantsToUpdate) {
+          await tx.productVariant.update({
+            where: { id: variant.id! },
+            data: {
+              name: variant.name,
+              sku: variant.sku,
+              barcode: variant.barcode,
+              price: variant.price,
+              compareAtPrice: variant.compareAtPrice,
+              inventoryQty: variant.inventoryQty ?? 0,
+              lowStockThreshold: variant.lowStockThreshold ?? 5,
+              weight: variant.weight,
+              image: variant.image,
+              options: typeof variant.options === 'string' ? variant.options : JSON.stringify(variant.options),
+              isDefault: variant.isDefault ?? false,
+            },
+          });
+        }
+
         // Create new variants
-        create: variantsToCreate.map((variant, index) => ({
-          name: variant.name,
-          sku: variant.sku,
-          barcode: variant.barcode,
-          price: variant.price,
-          compareAtPrice: variant.compareAtPrice,
-          inventoryQty: variant.inventoryQty ?? 0,
-          lowStockThreshold: variant.lowStockThreshold ?? 5,
-          weight: variant.weight,
-          image: variant.image,
-          options: typeof variant.options === 'string' ? variant.options : JSON.stringify(variant.options),
-          isDefault: variant.isDefault ?? (variantsToUpdate.length === 0 && index === 0),
-        })),
-      };
+        if (variantsToCreate.length > 0) {
+          await tx.productVariant.createMany({
+            data: variantsToCreate.map((variant, index) => ({
+              productId,
+              name: variant.name,
+              sku: variant.sku,
+              barcode: variant.barcode,
+              price: variant.price,
+              compareAtPrice: variant.compareAtPrice,
+              inventoryQty: variant.inventoryQty ?? 0,
+              lowStockThreshold: variant.lowStockThreshold ?? 5,
+              weight: variant.weight,
+              image: variant.image,
+              options: typeof variant.options === 'string' ? variant.options : JSON.stringify(variant.options),
+              isDefault: variant.isDefault ?? (variantsToUpdate.length === 0 && index === 0),
+            })),
+          });
+        }
+      });
     }
 
     // Remove id from update data
