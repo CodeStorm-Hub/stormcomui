@@ -3,7 +3,7 @@
 // src/components/inventory/inventory-history-dialog.tsx
 // Dialog to view inventory adjustment history for a product
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -108,14 +108,7 @@ export function InventoryHistoryDialog({
   const [reasonFilter, setReasonFilter] = useState('all');
   const [page, setPage] = useState(1);
 
-  useEffect(() => {
-    if (open && productId && storeId) {
-      fetchHistory();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, productId, storeId, page, reasonFilter]);
-
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -141,7 +134,13 @@ export function InventoryHistoryDialog({
     } finally {
       setLoading(false);
     }
-  };
+  }, [storeId, productId, page, reasonFilter]);
+
+  useEffect(() => {
+    if (open && productId && storeId) {
+      fetchHistory();
+    }
+  }, [open, productId, storeId, fetchHistory]);
 
   const getChangeIcon = (changeQty: number) => {
     if (changeQty > 0) {

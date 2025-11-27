@@ -132,7 +132,25 @@ export function BulkImportDialog({
       const line = lines[i].trim();
       if (!line) continue;
 
-      const parts = line.split(',').map((p) => p.trim().replace(/^"|"$/g, ''));
+      // Parse CSV with basic RFC 4180 support for quoted fields
+      // Handles quoted values containing commas, e.g., "Damaged, needs replacement"
+      const parts: string[] = [];
+      let current = '';
+      let inQuotes = false;
+      
+      for (let j = 0; j < line.length; j++) {
+        const char = line[j];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          parts.push(current.trim().replace(/^"|"$/g, ''));
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      parts.push(current.trim().replace(/^"|"$/g, ''));
+
       const [sku, quantityStr, typeStr, note] = parts;
 
       const quantity = parseInt(quantityStr, 10);

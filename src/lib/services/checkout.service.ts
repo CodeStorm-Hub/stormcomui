@@ -400,7 +400,11 @@ export class CheckoutService {
       );
 
       // Deduct inventory for each item within the same transaction
-      // This prevents race conditions and ensures consistency
+      // NOTE: This logic is intentionally duplicated here (also in InventoryService.deductStockForOrder)
+      // because order creation + inventory deduction MUST happen in the SAME Prisma transaction
+      // to guarantee atomicity. Calling InventoryService externally would use a separate transaction,
+      // allowing race conditions where the order succeeds but inventory deduction fails.
+      // Both implementations must be kept in sync when making changes.
       for (const item of validated.items) {
         if (item.variantId) {
           // Variant-level deduction

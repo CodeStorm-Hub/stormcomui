@@ -103,6 +103,7 @@ export function InventoryPageClient() {
   const [meta, setMeta] = useState<InventoryMeta | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [lowStockOnly, setLowStockOnly] = useState(searchParams.get('lowStockOnly') === 'true');
   const [page, setPage] = useState(1);
   const [selectedStore, setSelectedStore] = useState('');
@@ -119,6 +120,17 @@ export function InventoryPageClient() {
   const [reason, setReason] = useState('');
   const [note, setNote] = useState('');
 
+  // Debounce search input
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setDebouncedSearch(search);
+      if (search !== debouncedSearch) {
+        setPage(1);
+      }
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [search, debouncedSearch]);
+
   // Fetch inventory when dependencies change
   const fetchInventory = useCallback(async () => {
     if (!selectedStore) return;
@@ -131,7 +143,7 @@ export function InventoryPageClient() {
         perPage: '20',
       });
 
-      if (search) params.append('search', search);
+      if (debouncedSearch) params.append('search', debouncedSearch);
       if (lowStockOnly) params.append('lowStockOnly', 'true');
 
       const response = await fetch(`/api/inventory?${params}`);
@@ -148,25 +160,13 @@ export function InventoryPageClient() {
     } finally {
       setLoading(false);
     }
-  }, [selectedStore, page, search, lowStockOnly]);
+  }, [selectedStore, page, debouncedSearch, lowStockOnly]);
 
   useEffect(() => {
     if (session?.user && selectedStore) {
       fetchInventory();
     }
   }, [session, fetchInventory, selectedStore]);
-
-  // Debounce search
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (selectedStore) {
-        setPage(1);
-        fetchInventory();
-      }
-    }, 300);
-    return () => clearTimeout(timeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
 
   const handleStoreChange = (storeId: string) => {
     setSelectedStore(storeId);
@@ -534,8 +534,8 @@ export function InventoryPageClient() {
               {selectedItem && quantity && adjustmentType !== 'SET' && (
                 <p className="text-sm text-muted-foreground">
                   New stock: {adjustmentType === 'ADD' 
-                    ? selectedItem.inventoryQty + parseInt(quantity || '0')
-                    : Math.max(0, selectedItem.inventoryQty - parseInt(quantity || '0'))}
+                    ? selectedItem.inventoryQty + parseInt(quantity)
+                    : Math.max(0, selectedItem.inventoryQty - parseInt(quantity))}
                 </p>
               )}
             </div>

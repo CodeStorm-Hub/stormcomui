@@ -564,7 +564,7 @@ export class InventoryService {
           previousQty: product.inventoryQty,
           newQty,
           changeQty,
-          reason: typeof reason === 'string' ? reason : reason,
+          reason,
           note,
           userId,
         },
@@ -662,14 +662,22 @@ export class InventoryService {
         previousQty: variant.inventoryQty,
         newQty,
         changeQty,
-        reason: typeof reason === 'string' ? reason : reason,
+        reason,
         note,
         userId,
       },
     });
 
-    // Check for low stock alert trigger
-    const shouldAlert = newQty <= variant.lowStockThreshold && variant.inventoryQty > variant.lowStockThreshold;
+    // Check for low stock alert trigger using consistent helper method
+    const previousStatus = this.determineInventoryStatus(variant.inventoryQty, variant.lowStockThreshold);
+    const newStatus = this.determineInventoryStatus(newQty, variant.lowStockThreshold);
+    const shouldAlert = this.shouldTriggerLowStockAlert(
+      variant.inventoryQty,
+      newQty,
+      variant.lowStockThreshold,
+      previousStatus,
+      newStatus
+    );
     if (shouldAlert) {
       await this.createLowStockAuditLog(tx, storeId, productId, variantId, newQty, variant.lowStockThreshold);
     }

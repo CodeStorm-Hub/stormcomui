@@ -3,7 +3,7 @@
 // src/components/inventory/low-stock-widget.tsx
 // Low Stock Alert Widget for Dashboard
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -40,7 +40,7 @@ export function LowStockWidget({ storeId, maxItems = 5, className = '' }: LowSto
   const [loading, setLoading] = useState(true);
   const [counts, setCounts] = useState({ lowStock: 0, outOfStock: 0 });
 
-  const fetchLowStockItems = async () => {
+  const fetchLowStockItems = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/inventory/low-stock?storeId=${storeId}`);
@@ -58,14 +58,13 @@ export function LowStockWidget({ storeId, maxItems = 5, className = '' }: LowSto
     } finally {
       setLoading(false);
     }
-  };
+  }, [storeId]);
 
   useEffect(() => {
     if (storeId) {
       fetchLowStockItems();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storeId]);
+  }, [storeId, fetchLowStockItems]);
 
   // Don't render if no low stock items
   if (!loading && items.length === 0) {
