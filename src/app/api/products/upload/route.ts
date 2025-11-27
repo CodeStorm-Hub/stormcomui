@@ -24,9 +24,25 @@ const ALLOWED_TYPES = [
 ];
 
 // Validate storeId to prevent directory traversal attacks
+// Primary validation: CUID format (25 chars, starts with 'c', lowercase alphanumeric)
+// Fallback validation: general safe alphanumeric for backward compatibility
 function isValidStoreId(storeId: string): boolean {
-  // storeId should be alphanumeric with optional hyphens (cuid format)
-  return /^[a-zA-Z0-9-_]+$/.test(storeId) && storeId.length <= 100;
+  // Standard CUID format: exactly 25 chars, starts with 'c', lowercase alphanumeric
+  const cuidRegex = /^c[a-z0-9]{24}$/;
+  
+  // CUID2 format: 21-24 lowercase alphanumeric characters
+  const cuid2Regex = /^[a-z0-9]{21,24}$/;
+  
+  // Fallback: safe alphanumeric pattern for legacy/custom IDs
+  // Allows lowercase, digits, hyphens, and underscores (10-50 chars)
+  // Does NOT allow uppercase, dots, slashes, or other special characters to prevent path traversal
+  const safeIdRegex = /^[a-z0-9_-]{10,50}$/;
+  
+  return (
+    cuidRegex.test(storeId) ||
+    cuid2Regex.test(storeId) ||
+    safeIdRegex.test(storeId)
+  );
 }
 
 // Generate a unique filename

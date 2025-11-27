@@ -92,19 +92,19 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     
-    // Derive storeId from authenticated user's session or context
-    // Security: storeId is NOT accepted from client input to prevent tenant spoofing
-    // If user has a default store, use it; otherwise, look up storeId via membership/org
-    const storeId = session.user.storeId; // Replace with correct property or lookup
+    // Get storeId from request body
+    // Security: storeId is accepted from client but VERIFIED against user's organization membership
+    // via verifyStoreAccess() to prevent tenant spoofing
+    const storeId = body.storeId as string | undefined;
     
     if (!storeId) {
       return NextResponse.json(
-        { error: 'No store associated with your account. Cannot create product.' },
+        { error: 'storeId is required' },
         { status: 400 }
       );
     }
 
-    // Verify user has access to this store
+    // Verify user has access to this store (prevents tenant spoofing)
     const hasStoreAccess = await verifyStoreAccess(storeId);
     if (!hasStoreAccess) {
       return NextResponse.json(

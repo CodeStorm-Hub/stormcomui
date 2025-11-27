@@ -649,7 +649,14 @@ export class ProductService {
         throw new Error(`Duplicate variant SKUs in request: ${[...new Set(duplicates)].join(', ')}`);
       }
 
-      // Use a transaction to handle variant and attribute updates atomically
+      /**
+       * Transactional Guarantee:
+       * Variant and attribute updates for a product are performed within a single transaction to ensure atomicity.
+       * This means that either all changes to variants and attributes are applied together, or none are applied if any part fails.
+       * This prevents inconsistent product state (e.g., variants updated but attributes not, or vice versa) which could lead to data integrity issues.
+       * If any operation within the transaction fails (such as a constraint violation or a database error), all changes are rolled back.
+       * Keeping these updates atomic is critical for e-commerce correctness, especially in multi-tenant environments.
+       */
       await prisma.$transaction(async (tx) => {
         // Delete variants that are no longer in the list
         if (variantIdsToDelete.length > 0) {
@@ -1483,8 +1490,9 @@ export class ProductService {
             else if (statusUpper === 'ARCHIVED') status = ProductStatus.ARCHIVED;
           }
 
-          // Build product data - schema will apply defaults for missing optional fields
-          const productData = {
+          // Build product data object with all required fields explicitly defined
+          // The createProductSchema has defaults, but we provide them here for type safety
+          const productData: CreateProductData = {
             name: record.name,
             sku: record.sku,
             price,
@@ -1494,9 +1502,13 @@ export class ProductService {
             inventoryQty: isNaN(inventoryQty) ? 0 : inventoryQty,
             status,
             images,
+            // Provide defaults for fields that have schema defaults
+            trackInventory: true,
+            lowStockThreshold: 5,
+            isFeatured: false,
           };
 
-          await this.createProduct(storeId, productData as CreateProductData);
+          await this.createProduct(storeId, productData);
           return { success: true, row: rowNumber };
         } catch (error) {
           return { 

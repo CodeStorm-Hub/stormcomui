@@ -356,7 +356,7 @@ Soft deletes a product by setting `deletedAt` timestamp. The product is also arc
 POST /api/products/import
 ```
 
-Bulk imports products from a CSV file.
+Bulk imports products from a CSV file using [papaparse](https://www.papaparse.com/) for robust CSV parsing that handles edge cases like multiline quoted fields, different line endings, and escaped characters.
 
 #### Request
 
@@ -365,7 +365,7 @@ Bulk imports products from a CSV file.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `file` | File | Yes | CSV file (max 10MB) |
-| `storeId` | string | Yes | Store ID |
+| `storeId` | string | Yes | Store ID (verified against user's organization membership) |
 
 #### CSV Format
 
@@ -380,14 +380,17 @@ Optional columns:
 - `brandId`
 - `inventoryQty`
 - `status`
-- `images` (comma-separated URLs)
+- `images` (comma-separated URLs or JSON array)
 
 **Example CSV:**
 ```csv
 name,sku,price,description,categoryId,inventoryQty,status
 "Product 1",SKU001,29.99,"Description here",clxcat123,100,DRAFT
 "Product 2",SKU002,49.99,"Another product",clxcat456,50,ACTIVE
+"Product with ""quotes""",SKU003,19.99,"Description with, comma",clxcat789,25,DRAFT
 ```
+
+> **Note:** The CSV parser handles quoted fields, escaped quotes (doubled `""`), and commas within quotes correctly.
 
 #### Response
 
@@ -598,6 +601,13 @@ Variant options are stored as JSON:
 ---
 
 ## Changelog
+
+### v1.1.0 (Code Review Improvements)
+- **CSV Import**: Replaced custom CSV parser with [papaparse](https://www.papaparse.com/) library for robust handling of edge cases (multiline quoted fields, different line endings, escaped characters)
+- **Type Safety**: Improved Zod error handling using proper `ZodIssue` type
+- **Store ID Validation**: Enhanced CUID format validation for store IDs with support for both CUID and CUID2 formats
+- **Documentation**: Added transaction guarantee documentation for variant/attribute updates
+- **Migration**: Added documentation for Product_sku_idx index removal (replaced by multi-tenant composite unique constraint)
 
 ### v1.0.0 (Initial Release)
 - Product CRUD operations
