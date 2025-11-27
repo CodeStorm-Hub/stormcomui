@@ -45,7 +45,7 @@ export function AttributesManager({
   onChange,
   disabled = false,
 }: AttributesManagerProps) {
-  const [availableAttributes, setAvailableAttributes] = useState<StoreAttribute[]>([
+  const [availableAttributes] = useState<StoreAttribute[]>([
     // Mock data - in real implementation, fetch from API
     { id: '1', name: 'Color', values: ['Red', 'Blue', 'Green', 'Black', 'White'] },
     { id: '2', name: 'Size', values: ['XS', 'S', 'M', 'L', 'XL', 'XXL'] },
