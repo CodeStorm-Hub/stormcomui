@@ -10,7 +10,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
@@ -32,8 +31,6 @@ import {
 import { StoreSelector } from '@/components/store-selector';
 import { VariantManager, type ProductVariant } from '@/components/product/variant-manager';
 import { ImageUpload } from '@/components/product/image-upload';
-import { CategorySelector } from '@/components/product/category-selector';
-import { BrandSelector } from '@/components/product/brand-selector';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
@@ -91,6 +88,8 @@ export function ProductEditForm({ productId }: ProductEditFormProps) {
   const [storeId, setStoreId] = useState<string>('');
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [images, setImages] = useState<string[]>([]);
+  const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([]);
+  const [brands, setBrands] = useState<Array<{ id: string; name: string }>>([]);
 
   const form = useForm<ProductFormValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -125,8 +124,8 @@ export function ProductEditForm({ productId }: ProductEditFormProps) {
           name: product.name || '',
           slug: product.slug || '',
           description: product.description || '',
-          categoryId: (product as any).categoryId || undefined,
-          brandId: (product as any).brandId || undefined,
+          categoryId: product.categoryId || undefined,
+          brandId: product.brandId || undefined,
           sku: product.sku || '',
           price: product.price || 0,
           compareAtPrice: product.compareAtPrice || null,
@@ -137,10 +136,6 @@ export function ProductEditForm({ productId }: ProductEditFormProps) {
 
         // Set images
         setImages(product.images || []);
-
-        // Set category and brand
-        setCategoryId(product.categoryId || null);
-        setBrandId(product.brandId || null);
 
         // Set variants
         if (product.variants && product.variants.length > 0) {
@@ -192,8 +187,8 @@ export function ProductEditForm({ productId }: ProductEditFormProps) {
           storeId,
           name: data.name,
           slug: data.slug,
-          categoryId: (data as any).categoryId && (data as any).categoryId !== '__none' ? (data as any).categoryId : undefined,
-          brandId: (data as any).brandId && (data as any).brandId !== '__none' ? (data as any).brandId : undefined,
+          categoryId: data.categoryId && data.categoryId !== '__none' ? data.categoryId : undefined,
+          brandId: data.brandId && data.brandId !== '__none' ? data.brandId : undefined,
           description: data.description || undefined,
           sku: data.sku,
           price: data.price,
@@ -201,8 +196,6 @@ export function ProductEditForm({ productId }: ProductEditFormProps) {
           costPrice: data.costPerItem || null,
           inventoryQty: data.inventoryQty,
           status: data.status,
-          categoryId: categoryId || null,
-          brandId: brandId || null,
           images: images,
           variants: apiVariants,
         }),
@@ -237,12 +230,12 @@ export function ProductEditForm({ productId }: ProductEditFormProps) {
 
         if (cRes.ok) {
           const cJson = await cRes.json();
-          setCategories((cJson.categories || []).map((c: any) => ({ id: c.id, name: c.name })));
+          setCategories((cJson.categories || []).map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })));
         }
 
         if (bRes.ok) {
           const bJson = await bRes.json();
-          setBrands((bJson.brands || []).map((b: any) => ({ id: b.id, name: b.name })));
+          setBrands((bJson.brands || []).map((b: { id: string; name: string }) => ({ id: b.id, name: b.name })));
         }
       } catch (e) {
         console.error('Failed to fetch categories/brands', e);
@@ -357,12 +350,12 @@ export function ProductEditForm({ productId }: ProductEditFormProps) {
                       <FormItem>
                         <FormLabel>Category</FormLabel>
                         <FormControl>
-                                  <Select onValueChange={field.onChange} value={field.value ?? '__none'}>
+                          <Select onValueChange={field.onChange} value={field.value ?? '__none'}>
                             <SelectTrigger>
                               <SelectValue placeholder="Select category" />
                             </SelectTrigger>
                             <SelectContent>
-                                      <SelectItem value="__none">None</SelectItem>
+                              <SelectItem value="__none">None</SelectItem>
                               {categories.map((c) => (
                                 <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                               ))}
@@ -397,43 +390,6 @@ export function ProductEditForm({ productId }: ProductEditFormProps) {
                       </FormItem>
                     )}
                   />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Organization - Category & Brand */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Organization</CardTitle>
-                <CardDescription>Assign category and brand for this product</CardDescription>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Category</Label>
-                  <CategorySelector
-                    storeId={storeId}
-                    value={categoryId}
-                    onChange={setCategoryId}
-                    disabled={loading}
-                    placeholder="Select a category"
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Organize products by category for easier browsing
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Brand</Label>
-                  <BrandSelector
-                    storeId={storeId}
-                    value={brandId}
-                    onChange={setBrandId}
-                    disabled={loading}
-                    placeholder="Select a brand"
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Associate product with a brand
-                  </p>
                 </div>
               </CardContent>
             </Card>
