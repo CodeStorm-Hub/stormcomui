@@ -221,6 +221,8 @@ model Store {
   
   name           String
   slug           String   @unique
+  subdomain      String?  @unique  // Subdomain for multi-tenant routing (e.g., vendor1, vendor2)
+  customDomain   String?  @unique  // Custom domain for CNAME routing (e.g., vendor.com)
   description    String?
   logo           String?
   email          String
@@ -263,6 +265,8 @@ model Store {
   deletedAt      DateTime?
   
   @@index([slug])
+  @@index([subdomain])
+  @@index([customDomain])
   @@index([subscriptionPlan])
   @@index([subscriptionStatus])
 }

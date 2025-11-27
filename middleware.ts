@@ -1,11 +1,236 @@
-export { default } from "next-auth/middleware";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
+
+/**
+ * Simple in-memory cache with TTL support
+ * Used in Edge Runtime (middleware) where Prisma isn't available
+ */
+class EdgeCache {
+  private cache = new Map<string, { data: unknown; expires: number }>();
+
+  set<T>(key: string, data: T, ttlSeconds: number): void {
+    this.cache.set(key, {
+      data,
+      expires: Date.now() + ttlSeconds * 1000,
+    });
+  }
+
+  get<T>(key: string): T | null {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    if (Date.now() > entry.expires) {
+      this.cache.delete(key);
+      return null;
+    }
+    return entry.data as T;
+  }
+}
+
+const storeCache = new EdgeCache();
+const STORE_CACHE_TTL = 600; // 10 minutes
+
+interface StoreData {
+  id: string;
+  slug: string;
+  name: string;
+}
+
+/**
+ * Extract subdomain from hostname
+ * 
+ * @example
+ * - vendor1.stormcom.app → vendor1
+ * - vendor1.localhost → vendor1
+ * - vendor.com → vendor (custom domain case)
+ * - www.stormcom.app → null (www is ignored)
+ */
+function extractSubdomain(hostname: string): string | null {
+  const host = hostname.split(":")[0];
+
+  // Development: vendor1.localhost
+  if (host.endsWith(".localhost")) {
+    const subdomain = host.replace(".localhost", "");
+    return subdomain || null;
+  }
+
+  // Production: vendor1.stormcom.app
+  const parts = host.split(".");
+  if (parts.length >= 3) {
+    return parts[0];
+  }
+
+  // Custom domain: vendor.com → vendor
+  if (parts.length === 2) {
+    return parts[0];
+  }
+
+  return null;
+}
+
+/**
+ * Check if the request should skip subdomain routing
+ */
+function shouldSkipSubdomainRouting(
+  subdomain: string | null,
+  pathname: string
+): boolean {
+  if (!subdomain) return true;
+  if (subdomain === "www") return true;
+
+  // Skip admin/protected routes
+  if (pathname.startsWith("/dashboard")) return true;
+  if (pathname.startsWith("/settings")) return true;
+  if (pathname.startsWith("/team")) return true;
+  if (pathname.startsWith("/projects")) return true;
+  if (pathname.startsWith("/products")) return true;
+  if (pathname.startsWith("/onboarding")) return true;
+
+  // Skip API routes
+  if (pathname.startsWith("/api")) return true;
+
+  // Skip auth routes
+  if (pathname.startsWith("/login")) return true;
+  if (pathname.startsWith("/signup")) return true;
+  if (pathname.startsWith("/verify-email")) return true;
+
+  // Skip Next.js internal routes
+  if (pathname.startsWith("/_next")) return true;
+
+  // Skip static files
+  if (pathname.startsWith("/favicon")) return true;
+  if (pathname.match(/\.[a-zA-Z0-9]+$/)) return true;
+
+  // Skip checkout routes
+  if (pathname.startsWith("/checkout")) return true;
+
+  // Skip store-not-found page
+  if (pathname.startsWith("/store-not-found")) return true;
+
+  return false;
+}
+
+/**
+ * Fetch store data via API (Edge Runtime compatible)
+ */
+async function getStoreBySubdomain(
+  subdomain: string,
+  hostname: string,
+  baseUrl: string
+): Promise<StoreData | null> {
+  const cacheKey = `store:${hostname.split(":")[0]}`;
+
+  // Check cache
+  const cached = storeCache.get<StoreData>(cacheKey);
+  if (cached) return cached;
+
+  try {
+    // Fetch store from internal API
+    const response = await fetch(
+      `${baseUrl}/api/stores/lookup?subdomain=${encodeURIComponent(subdomain)}&domain=${encodeURIComponent(hostname.split(":")[0])}`,
+      { 
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        // Use short timeout for middleware
+        signal: AbortSignal.timeout(3000),
+      }
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const store = await response.json() as StoreData;
+    
+    if (store?.id) {
+      storeCache.set(cacheKey, store, STORE_CACHE_TTL);
+      return store;
+    }
+
+    return null;
+  } catch {
+    // Don't block on cache/fetch errors
+    return null;
+  }
+}
+
+/**
+ * Middleware handler for subdomain routing and auth protection
+ */
+export async function middleware(request: NextRequest) {
+  const url = request.nextUrl;
+  const hostname = request.headers.get("host") || "";
+  const pathname = url.pathname;
+
+  // Get subdomain
+  const subdomain = extractSubdomain(hostname);
+
+  // Check if we should process subdomain routing
+  if (!shouldSkipSubdomainRouting(subdomain, pathname)) {
+    // Subdomain detected - handle store routing
+    const baseUrl = url.origin;
+    const store = await getStoreBySubdomain(subdomain!, hostname, baseUrl);
+
+    if (!store) {
+      // Invalid subdomain - redirect to 404 page
+      return NextResponse.rewrite(new URL("/store-not-found", request.url));
+    }
+
+    // Rewrite to store route with slug
+    // vendor1.stormcom.app/products → /store/vendor1/products
+    const storePath = pathname === "/" ? "" : pathname;
+    const storeUrl = new URL(`/store/${store.slug}${storePath}`, request.url);
+    
+    // Preserve query parameters
+    storeUrl.search = url.search;
+
+    const response = NextResponse.rewrite(storeUrl);
+    
+    // Pass store data via headers for downstream use
+    response.headers.set("x-store-id", store.id);
+    response.headers.set("x-store-slug", store.slug);
+    response.headers.set("x-store-name", store.name);
+
+    return response;
+  }
+
+  // Check if route needs authentication
+  const protectedPaths = [
+    "/dashboard",
+    "/settings",
+    "/team",
+    "/projects",
+    "/products",
+  ];
+
+  const isProtectedPath = protectedPaths.some((path) =>
+    pathname.startsWith(path)
+  );
+
+  if (isProtectedPath) {
+    // Check for valid session token
+    const token = await getToken({ req: request });
+
+    if (!token) {
+      // Redirect to login with callback URL
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: [
-    "/dashboard/:path*", 
-    "/settings/:path*", 
-    "/team/:path*", 
+    // Protected routes (NextAuth)
+    "/dashboard/:path*",
+    "/settings/:path*",
+    "/team/:path*",
     "/projects/:path*",
-    "/products/:path*",  // Protect products routes
+    "/products/:path*",
+    // All other routes for subdomain handling (exclude static files and API)
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.[^/]+$).*)",
   ],
 };
