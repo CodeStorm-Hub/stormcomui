@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Build script for Next.js with dynamic Prisma schema selection (Node.js version)
-// This script determines which Prisma schema to use based on DATABASE_URL
+// Build script for Next.js with unified Prisma schema
+// This script ensures Prisma Client is generated before building
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const { execSync } = require('child_process');
@@ -8,11 +8,11 @@ const path = require('path');
 const fs = require('fs');
 /* eslint-enable @typescript-eslint/no-require-imports */
 
-// Load .env file if it exists (for local development)
-const envPath = path.join(__dirname, '..', '.env');
-if (fs.existsSync(envPath)) {
-  console.log('📄 Loading .env file...');
-  const envContent = fs.readFileSync(envPath, 'utf8');
+// Load .env.local file if it exists (for local development)
+const envLocalPath = path.join(__dirname, '..', '.env.local');
+if (fs.existsSync(envLocalPath)) {
+  console.log('📄 Loading .env.local file...');
+  const envContent = fs.readFileSync(envLocalPath, 'utf8');
   envContent.split('\n').forEach(line => {
     const trimmed = line.trim();
     if (trimmed && !trimmed.startsWith('#')) {
@@ -34,26 +34,27 @@ const databaseUrl = process.env.DATABASE_URL;
 
 if (!databaseUrl) {
   console.error('❌ Error: DATABASE_URL is not set');
+  console.log('💡 Tip: Create a .env.local file with DATABASE_URL="file:./dev.db"');
   process.exit(1);
 }
 
-// Determine which schema to use based on DATABASE_URL
-let schemaPath;
+// Detect and log database type
 if (databaseUrl.startsWith('postgresql://') || databaseUrl.startsWith('postgres://')) {
-  console.log('🐘 Detected PostgreSQL database, using schema.postgres.prisma');
-  schemaPath = 'prisma/schema.postgres.prisma';
+  console.log('🐘 Detected PostgreSQL database');
 } else if (databaseUrl.startsWith('file:')) {
-  console.log('🗄️  Detected SQLite database, using schema.sqlite.prisma');
-  schemaPath = 'prisma/schema.sqlite.prisma';
+  console.log('🗄️  Detected SQLite database');
 } else {
-  console.log('⚠️  Unknown database type, defaulting to PostgreSQL schema');
-  schemaPath = 'prisma/schema.postgres.prisma';
+  console.log('⚠️  Unknown database type, proceeding with build');
 }
+
+// Use unified schema
+const schemaPath = 'prisma/schema.prisma';
+console.log(`📋 Using unified schema: ${schemaPath}`);
 
 try {
   // Generate Prisma Client
-  console.log(`📦 Generating Prisma Client from ${schemaPath}...`);
-  execSync(`npx prisma generate --schema="${schemaPath}"`, {
+  console.log('📦 Generating Prisma Client...');
+  execSync(`npx prisma generate`, {
     stdio: 'inherit',
     cwd: path.join(__dirname, '..'),
   });

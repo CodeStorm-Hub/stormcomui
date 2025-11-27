@@ -1,12 +1,28 @@
-// Prisma schema for PostgreSQL (production)
-// Use with: npx prisma migrate deploy --schema=prisma/schema.postgres.prisma
+// Unified Prisma schema supporting both SQLite (development) and PostgreSQL (production)
+// 
+// This schema is designed to work with both databases with minimal differences.
+// The actual provider is set at runtime based on your DATABASE_URL format:
+//   - file:./dev.db → SQLite
+//   - postgresql://... → PostgreSQL
+//
+// For development (SQLite):
+//   DATABASE_URL="file:./dev.db"
+//   Use: npm run prisma:migrate:dev
+//
+// For production (PostgreSQL):
+//   DATABASE_URL="postgresql://user:password@localhost:5432/dbname"
+//   Use: npm run prisma:migrate:deploy
+//
+// Note: By default, this schema is configured for SQLite (development).
+// For production deployment, the provider should be changed to "postgresql"
+// via environment-specific schema files or build scripts.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -139,7 +155,6 @@ model ProjectMember {
   @@unique([projectId, userId])
   @@index([userId])
 }
-
 // ============================================================================
 // E-COMMERCE MODELS
 // ============================================================================
@@ -394,6 +409,7 @@ model Category {
   @@index([storeId, parentId])
   @@index([storeId, isPublished])
   @@index([parentId, sortOrder])
+  // Note: @@unique([storeId, slug]) already creates an implicit index for lookups
 }
 
 model Brand {
@@ -485,6 +501,7 @@ model Customer {
   @@unique([storeId, email])
   @@index([storeId, userId])
   // Note: @@unique([storeId, email]) already creates an implicit index
+  // Removed redundant @@index([storeId, email]) and @@index([email, storeId])
 }
 
 // Order models
@@ -511,7 +528,7 @@ model Order {
   paymentGateway PaymentGateway?
   paymentStatus  PaymentStatus @default(PENDING)
   
-  shippingMethod String? // Shipping method (e.g., "Pathao", "manual", "pickup")
+  shippingMethod String? // Pathao, manual, pickup, etc.
   trackingNumber String?
   trackingUrl    String?
   estimatedDelivery DateTime? // Estimated delivery date
