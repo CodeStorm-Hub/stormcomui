@@ -4,8 +4,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
+import { verifyStoreAccess } from '@/lib/get-current-user';
 import { ProductService } from '@/lib/services/product.service';
-import { z } from 'zod';
+import { z, ZodIssue } from 'zod';
+import Papa from 'papaparse';
 
 // Zod schema for CSV record validation
 const csvRecordSchema = z.object({
@@ -27,64 +29,6 @@ const csvRecordSchema = z.object({
   status: z.string().optional(),
   images: z.string().optional(),
 }).passthrough(); // Allow additional columns
-
-// Simple CSV parser (handles quoted fields and commas within quotes)
-function parseCSV(text: string): Array<Record<string, string>> {
-  const lines = text.split('\n').filter(line => line.trim());
-  if (lines.length < 2) {
-    return [];
-  }
-
-  // Parse header
-  const headers = parseCSVLine(lines[0]);
-  
-  // Parse data rows
-  const records: Array<Record<string, string>> = [];
-  for (let i = 1; i < lines.length; i++) {
-    const values = parseCSVLine(lines[i]);
-    if (values.length > 0) {
-      const record: Record<string, string> = {};
-      headers.forEach((header, index) => {
-        record[header.trim()] = values[index]?.trim() || '';
-      });
-      records.push(record);
-    }
-  }
-
-  return records;
-}
-
-// Parse a single CSV line, handling quoted fields
-function parseCSVLine(line: string): string[] {
-  const result: string[] = [];
-  let current = '';
-  let inQuotes = false;
-
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    
-    if (char === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        // Escaped quote
-        current += '"';
-        i++;
-      } else {
-        // Toggle quote mode
-        inQuotes = !inQuotes;
-      }
-    } else if (char === ',' && !inQuotes) {
-      result.push(current);
-      current = '';
-    } else {
-      current += char;
-    }
-  }
-  
-  // Add last field
-  result.push(current);
-  
-  return result;
-}
 
 // POST /api/products/import - Bulk import products from CSV
 export async function POST(request: NextRequest) {
@@ -117,6 +61,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Verify user has access to this store (multi-tenant security)
+    const hasStoreAccess = await verifyStoreAccess(storeId);
+    if (!hasStoreAccess) {
+      return NextResponse.json(
+        { error: 'Access denied. You do not have permission to import products to this store.' },
+        { status: 403 }
+      );
+    }
+
     // Validate file type
     const fileName = file.name.toLowerCase();
     if (!fileName.endsWith('.csv')) {
@@ -126,9 +79,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Read and parse CSV
+    // Read and parse CSV using papaparse (handles edge cases like multiline quoted fields, different line endings, escaped characters)
     const text = await file.text();
-    const records = parseCSV(text);
+    const parseResult = Papa.parse<Record<string, string>>(text, {
+      header: true,
+      skipEmptyLines: true,
+      transformHeader: (header: string) => header.trim(),
+      transform: (value: string) => value.trim(),
+    });
+
+    // Check for parsing errors
+    if (parseResult.errors && parseResult.errors.length > 0) {
+      const criticalErrors = parseResult.errors.filter(e => e.type === 'Quotes' || e.type === 'FieldMismatch');
+      if (criticalErrors.length > 0) {
+        return NextResponse.json({
+          error: 'CSV parsing failed',
+          details: criticalErrors.map(e => ({ row: e.row, message: e.message })),
+        }, { status: 400 });
+      }
+    }
+
+    const records = parseResult.data;
 
     if (records.length === 0) {
       return NextResponse.json(
@@ -168,10 +139,8 @@ export async function POST(request: NextRequest) {
       if (result.success) {
         validatedRecords.push(result.data);
       } else {
-        // Zod 4 uses issues instead of errors
-        const errorMessages = result.error.issues 
-          ? result.error.issues.map((issue: { message: string }) => issue.message).join(', ')
-          : 'Validation failed';
+        // Use proper ZodIssue type from Zod for type-safe error handling
+        const errorMessages = result.error.issues.map((issue: ZodIssue) => issue.message).join(', ');
         validationErrors.push({
           row: i + 1,
           error: errorMessages,

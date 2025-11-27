@@ -123,13 +123,21 @@ export const createProductSchema = z.object({
     }
   }, { message: 'Invalid image URL' })).default([]),
   thumbnailUrl: z.string().url().optional().nullable(),
+  // SEO fields
   metaTitle: z.string().max(255).optional().nullable(),
   metaDescription: z.string().max(500).optional().nullable(),
   metaKeywords: z.string().optional().nullable(),
+  seoTitle: z.string().max(255).optional().nullable(),
+  seoDescription: z.string().max(500).optional().nullable(),
   status: z.nativeEnum(ProductStatus).default(ProductStatus.DRAFT),
   isFeatured: z.boolean().default(false),
   // Variants support (min 0, max 100)
   variants: z.array(variantSchema).min(0).max(100).optional(),
+  // Product attributes (custom attributes)
+  attributes: z.array(z.object({
+    attributeId: z.string().cuid(),
+    value: z.string().min(1),
+  })).optional(),
 });
 
 export const updateProductSchema = createProductSchema.partial().extend({
@@ -446,9 +454,12 @@ export class ProductService {
       height: validatedData.height,
       images: JSON.stringify(validatedData.images),
       thumbnailUrl: validatedData.thumbnailUrl || validatedData.images[0] || null,
+      // SEO fields
       metaTitle: validatedData.metaTitle,
       metaDescription: validatedData.metaDescription,
       metaKeywords: validatedData.metaKeywords,
+      seoTitle: validatedData.seoTitle,
+      seoDescription: validatedData.seoDescription,
       status: validatedData.status,
       publishedAt: validatedData.status === ProductStatus.ACTIVE ? new Date() : null,
       isFeatured: validatedData.isFeatured,
@@ -486,6 +497,16 @@ export class ProductService {
       };
     }
 
+    // Add product attributes if provided
+    if (validatedData.attributes && validatedData.attributes.length > 0) {
+      productData.attributes = {
+        create: validatedData.attributes.map(attr => ({
+          attribute: { connect: { id: attr.attributeId } },
+          value: attr.value,
+        })),
+      };
+    }
+
     const product = await prisma.product.create({
       data: productData,
       include: {
@@ -496,6 +517,21 @@ export class ProductService {
           select: { id: true, name: true, slug: true },
         },
         variants: true,
+        attributes: {
+          select: {
+            id: true,
+            productId: true,
+            attributeId: true,
+            value: true,
+            attribute: {
+              select: {
+                id: true,
+                name: true,
+                values: true,
+              },
+            },
+          },
+        },
         _count: {
           select: {
             orderItems: true,
@@ -543,8 +579,18 @@ export class ProductService {
       inventoryStatus = this.calculateInventoryStatus(validatedData.inventoryQty, lowStockThreshold);
     }
 
-    // Prepare update data (exclude JSON fields like images and variants from direct spread to satisfy Prisma types)
-    const { images: imagesArr, variants: variantsArr, ...rest } = validatedData as UpdateProductData & { images?: string[]; variants?: VariantData[] };
+    // Prepare update data (exclude JSON fields like images, variants, and attributes from direct spread to satisfy Prisma types)
+    const validatedProductData = validatedData as UpdateProductData & {
+      images?: string[];
+      variants?: VariantData[];
+      attributes?: { attributeId: string; value: string }[];
+    };
+    const {
+      images: imagesArr,
+      variants: variantsArr,
+      attributes: attributesArr,
+      ...rest
+    } = validatedProductData;
     const updateData: Prisma.ProductUpdateInput = {
       ...rest,
       inventoryStatus,
@@ -580,20 +626,13 @@ export class ProductService {
 
     // Handle variants update
     if (variantsArr !== undefined) {
-      // Validate variant SKUs are unique (excluding existing variants of this product)
-      const newVariantSkus = variantsArr
-        .filter(v => !v.id) // Only new variants (no id)
-        .map(v => v.sku);
-      if (newVariantSkus.length > 0) {
-        await this.validateVariantSkus(newVariantSkus, productId);
-      }
-
       // Get existing variant IDs for the product
       const existingVariants = await prisma.productVariant.findMany({
         where: { productId },
         select: { id: true, sku: true },
       });
       const existingVariantIds = new Set(existingVariants.map(v => v.id));
+      const existingVariantSkus = new Map(existingVariants.map(v => [v.id, v.sku]));
 
       // Separate variants into updates and creates
       const variantsToUpdate = variantsArr.filter(v => v.id && existingVariantIds.has(v.id));
@@ -603,7 +642,42 @@ export class ProductService {
         .filter(v => !variantIdsToKeep.has(v.id))
         .map(v => v.id);
 
-      // Use a transaction to handle variant updates individually
+      // Validate variant SKUs for new variants
+      const newVariantSkus = variantsToCreate.map(v => v.sku);
+      if (newVariantSkus.length > 0) {
+        await this.validateVariantSkus(newVariantSkus, productId);
+      }
+
+      // Validate SKU changes for existing variants being updated
+      // Only check SKUs that are actually changing
+      const changedSkuVariants = variantsToUpdate.filter(v => {
+        const oldSku = existingVariantSkus.get(v.id!);
+        return oldSku !== v.sku;
+      });
+      
+      if (changedSkuVariants.length > 0) {
+        const changedSkus = changedSkuVariants.map(v => v.sku);
+        // Check if any changed SKU conflicts with other variants (excluding the ones being updated)
+        const variantIdsBeingUpdated = changedSkuVariants.map(v => v.id!);
+        await this.validateVariantSkusForUpdate(changedSkus, productId, variantIdsBeingUpdated);
+      }
+
+      // Check for duplicate SKUs within the request itself (new + updated)
+      const allRequestSkus = [...newVariantSkus, ...variantsToUpdate.map(v => v.sku)];
+      const uniqueRequestSkus = new Set(allRequestSkus);
+      if (uniqueRequestSkus.size !== allRequestSkus.length) {
+        const duplicates = allRequestSkus.filter((sku, index) => allRequestSkus.indexOf(sku) !== index);
+        throw new Error(`Duplicate variant SKUs in request: ${[...new Set(duplicates)].join(', ')}`);
+      }
+
+      /**
+       * Transactional Guarantee:
+       * Variant and attribute updates for a product are performed within a single transaction to ensure atomicity.
+       * This means that either all changes to variants and attributes are applied together, or none are applied if any part fails.
+       * This prevents inconsistent product state (e.g., variants updated but attributes not, or vice versa) which could lead to data integrity issues.
+       * If any operation within the transaction fails (such as a constraint violation or a database error), all changes are rolled back.
+       * Keeping these updates atomic is critical for e-commerce correctness, especially in multi-tenant environments.
+       */
       await prisma.$transaction(async (tx) => {
         // Delete variants that are no longer in the list
         if (variantIdsToDelete.length > 0) {
@@ -651,6 +725,41 @@ export class ProductService {
             })),
           });
         }
+
+        // Handle attributes update within the same transaction
+        if (attributesArr !== undefined) {
+          // Delete existing attributes and create new ones
+          await tx.productAttributeValue.deleteMany({
+            where: { productId },
+          });
+          
+          if (attributesArr.length > 0) {
+            await tx.productAttributeValue.createMany({
+              data: attributesArr.map(attr => ({
+                productId,
+                attributeId: attr.attributeId,
+                value: attr.value,
+              })),
+            });
+          }
+        }
+      });
+    } else if (attributesArr !== undefined) {
+      // Handle attributes update when no variants are being updated
+      await prisma.$transaction(async (tx) => {
+        await tx.productAttributeValue.deleteMany({
+          where: { productId },
+        });
+        
+        if (attributesArr.length > 0) {
+          await tx.productAttributeValue.createMany({
+            data: attributesArr.map(attr => ({
+              productId,
+              attributeId: attr.attributeId,
+              value: attr.value,
+            })),
+          });
+        }
       });
     }
 
@@ -678,6 +787,21 @@ export class ProductService {
             image: true,
           },
           orderBy: { isDefault: 'desc' },
+        },
+        attributes: {
+          select: {
+            id: true,
+            productId: true,
+            attributeId: true,
+            value: true,
+            attribute: {
+              select: {
+                id: true,
+                name: true,
+                values: true,
+              },
+            },
+          },
         },
         _count: {
           select: {
@@ -1228,6 +1352,36 @@ export class ProductService {
     }
   }
 
+  /**
+   * Validate that updated variant SKUs don't conflict with other variants
+   * This is used when existing variants change their SKU value
+   * @param skus - Array of new SKU values for variants being updated
+   * @param productId - Product ID the variants belong to
+   * @param excludeVariantIds - Variant IDs to exclude (the ones being updated)
+   */
+  private async validateVariantSkusForUpdate(
+    skus: string[], 
+    productId: string, 
+    excludeVariantIds: string[]
+  ): Promise<void> {
+    if (skus.length === 0) return;
+
+    // Check if any of the new SKUs conflict with existing variants
+    // (excluding the variants that are being updated themselves)
+    const conflictingVariants = await prisma.productVariant.findMany({
+      where: {
+        sku: { in: skus },
+        id: { notIn: excludeVariantIds },
+      },
+      select: { sku: true },
+    });
+
+    if (conflictingVariants.length > 0) {
+      const conflictingSkus = conflictingVariants.map(v => v.sku);
+      throw new Error(`Cannot update variant SKU(s) - already in use: ${conflictingSkus.join(', ')}`);
+    }
+  }
+
   // --------------------------------------------------------------------------
   // CONVENIENCE ALIASES
   // --------------------------------------------------------------------------
@@ -1357,8 +1511,9 @@ export class ProductService {
             else if (statusUpper === 'ARCHIVED') status = ProductStatus.ARCHIVED;
           }
 
-          // Build product data - schema will apply defaults for missing optional fields
-          const productData = {
+          // Build product data object with all required fields explicitly defined
+          // The createProductSchema has defaults, but we provide them here for type safety
+          const productData: CreateProductData = {
             name: record.name,
             sku: record.sku,
             price,
@@ -1368,9 +1523,13 @@ export class ProductService {
             inventoryQty: isNaN(inventoryQty) ? 0 : inventoryQty,
             status,
             images,
+            // Provide defaults for fields that have schema defaults
+            trackInventory: true,
+            lowStockThreshold: 5,
+            isFeatured: false,
           };
 
-          await this.createProduct(storeId, productData as CreateProductData);
+          await this.createProduct(storeId, productData);
           return { success: true, row: rowNumber };
         } catch (error) {
           return { 

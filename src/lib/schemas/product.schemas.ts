@@ -95,6 +95,20 @@ export const brandRefSchema = z.object({
 }).nullable().optional();
 
 /**
+ * Product attribute value schema (for custom attributes)
+ */
+export const productAttributeValueSchema = z.object({
+  id: z.string(),
+  attributeId: z.string(),
+  value: z.string(),
+  attribute: z.object({
+    id: z.string(),
+    name: z.string(),
+    values: z.string(), // JSON array of possible values
+  }).optional(),
+});
+
+/**
  * Product response schema
  */
 export const productResponseSchema = z.object({
@@ -123,13 +137,18 @@ export const productResponseSchema = z.object({
   brand: brandRefSchema,
   images: z.array(z.string()),
   thumbnailUrl: z.string().nullable().optional(),
+  // SEO fields
   metaTitle: z.string().nullable().optional(),
   metaDescription: z.string().nullable().optional(),
   metaKeywords: z.string().nullable().optional(),
+  seoTitle: z.string().nullable().optional(),
+  seoDescription: z.string().nullable().optional(),
   status: z.nativeEnum(ProductStatus),
   publishedAt: z.union([z.date(), z.string()]).nullable().optional(),
+  archivedAt: z.union([z.date(), z.string()]).nullable().optional(),
   isFeatured: z.boolean(),
   variants: z.array(variantResponseSchema).optional(),
+  attributes: z.array(productAttributeValueSchema).optional(),
   _count: z.object({
     orderItems: z.number().int(),
     reviews: z.number().int(),
@@ -141,9 +160,11 @@ export const productResponseSchema = z.object({
 
 /**
  * Product create request schema
+ * Note: storeId is NOT included here - it should be derived from the authenticated
+ * user's context (session) in route handlers to prevent tenant spoofing attacks.
+ * The storeId is passed separately to the service layer.
  */
 export const productCreateSchema = z.object({
-  storeId: z.string(),
   name: z.string().min(1).max(255),
   slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
   description: z.string().optional(),
@@ -164,12 +185,20 @@ export const productCreateSchema = z.object({
   brandId: z.string().cuid().optional().nullable(),
   images: z.array(z.string().url()).default([]),
   thumbnailUrl: z.string().url().optional().nullable(),
+  // SEO fields
   metaTitle: z.string().max(255).optional().nullable(),
   metaDescription: z.string().max(500).optional().nullable(),
   metaKeywords: z.string().optional().nullable(),
+  seoTitle: z.string().max(255).optional().nullable(),
+  seoDescription: z.string().max(500).optional().nullable(),
   status: z.nativeEnum(ProductStatus).default(ProductStatus.DRAFT),
   isFeatured: z.boolean().default(false),
   variants: z.array(variantCreateSchema).min(0).max(100).optional(),
+  // Product attributes (custom attributes)
+  attributes: z.array(z.object({
+    attributeId: z.string().cuid(),
+    value: z.string().min(1),
+  })).optional(),
 });
 
 /**
@@ -263,3 +292,4 @@ export type ImageUploadResponse = z.infer<typeof imageUploadResponseSchema>;
 export type ImagesUploadResponse = z.infer<typeof imagesUploadResponseSchema>;
 export type ErrorResponse = z.infer<typeof errorResponseSchema>;
 export type DeleteResponse = z.infer<typeof deleteResponseSchema>;
+export type ProductAttributeValue = z.infer<typeof productAttributeValueSchema>;

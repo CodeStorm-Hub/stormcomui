@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
+import { verifyStoreAccess } from '@/lib/get-current-user';
 import { ProductService } from '@/lib/services/product.service';
 import { z } from 'zod';
 
@@ -33,6 +34,15 @@ export async function GET(
       return NextResponse.json(
         { error: 'storeId is required' },
         { status: 400 }
+      );
+    }
+
+    // Verify user has access to this store
+    const hasStoreAccess = await verifyStoreAccess(storeId);
+    if (!hasStoreAccess) {
+      return NextResponse.json(
+        { error: 'Access denied. You do not have permission to access this store.' },
+        { status: 403 }
       );
     }
 
@@ -73,17 +83,29 @@ export async function PATCH(
     const params = await context.params;
     const body = await request.json();
     
-    if (!body.storeId) {
+    // Get storeId from request body
+    const storeId = body.storeId;
+    
+    if (!storeId) {
       return NextResponse.json(
         { error: 'storeId is required' },
         { status: 400 }
       );
     }
 
+    // Verify user has access to this store
+    const hasStoreAccess = await verifyStoreAccess(storeId);
+    if (!hasStoreAccess) {
+      return NextResponse.json(
+        { error: 'Access denied. You do not have permission to modify products in this store.' },
+        { status: 403 }
+      );
+    }
+
     const productService = ProductService.getInstance();
     const product = await productService.updateProduct(
       params.id,
-      body.storeId,
+      storeId,
       body
     );
 
@@ -137,6 +159,15 @@ export async function DELETE(
       );
     }
 
+    // Verify user has access to this store
+    const hasStoreAccess = await verifyStoreAccess(storeId);
+    if (!hasStoreAccess) {
+      return NextResponse.json(
+        { error: 'Access denied. You do not have permission to delete products in this store.' },
+        { status: 403 }
+      );
+    }
+
     const productService = ProductService.getInstance();
     
     // Soft delete (sets deletedAt timestamp)
@@ -181,17 +212,29 @@ export async function PUT(
     const params = await context.params;
     const body = await request.json();
     
-    if (!body.storeId) {
+    // Get storeId from request body
+    const storeId = body.storeId;
+    
+    if (!storeId) {
       return NextResponse.json(
         { error: 'storeId is required' },
         { status: 400 }
       );
     }
 
+    // Verify user has access to this store
+    const hasStoreAccess = await verifyStoreAccess(storeId);
+    if (!hasStoreAccess) {
+      return NextResponse.json(
+        { error: 'Access denied. You do not have permission to modify products in this store.' },
+        { status: 403 }
+      );
+    }
+
     const productService = ProductService.getInstance();
     const product = await productService.updateProduct(
       params.id,
-      body.storeId,
+      storeId,
       body
     );
 
