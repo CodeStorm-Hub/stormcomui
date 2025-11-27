@@ -42,6 +42,20 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Inventory adjustment reason codes matching the service enum
+const ADJUSTMENT_REASONS = [
+  { value: 'restock', label: 'Restock' },
+  { value: 'manual_adjustment', label: 'Manual Adjustment' },
+  { value: 'damaged', label: 'Damaged' },
+  { value: 'lost', label: 'Lost' },
+  { value: 'found', label: 'Found' },
+  { value: 'return_processed', label: 'Return Processed' },
+  { value: 'inventory_count', label: 'Inventory Count' },
+  { value: 'stock_transfer', label: 'Stock Transfer' },
+  { value: 'expired', label: 'Expired' },
+  { value: 'theft', label: 'Theft' },
+] as const;
+
 interface InventoryItem {
   id: string;
   name: string;
@@ -106,7 +120,7 @@ export function InventoryPageClient() {
       } else {
         toast.error(data.error || 'Failed to fetch inventory');
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to fetch inventory');
     } finally {
       setLoading(false);
@@ -129,7 +143,7 @@ export function InventoryPageClient() {
           quantity: parseInt(quantity),
           type: adjustmentType,
           reason,
-          note,
+          note: note || undefined,
         }),
       });
 
@@ -143,7 +157,7 @@ export function InventoryPageClient() {
       } else {
         toast.error(data.error || 'Failed to adjust stock');
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to adjust stock');
     }
   };
@@ -393,12 +407,11 @@ export function InventoryPageClient() {
                   <SelectValue placeholder="Select reason" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Restock">Restock</SelectItem>
-                  <SelectItem value="Damaged">Damaged</SelectItem>
-                  <SelectItem value="Lost">Lost</SelectItem>
-                  <SelectItem value="Returned">Returned</SelectItem>
-                  <SelectItem value="Correction">Inventory Correction</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
+                  {ADJUSTMENT_REASONS.map((r) => (
+                    <SelectItem key={r.value} value={r.value}>
+                      {r.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

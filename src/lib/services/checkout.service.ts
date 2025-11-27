@@ -327,6 +327,7 @@ export class CheckoutService {
 
   /**
    * Create order with items in transaction
+   * Uses InventoryService for atomic stock deduction with audit logging
    */
   async createOrder(input: CreateOrderInput): Promise<CreatedOrder> {
     // Validate cart first
@@ -394,33 +395,25 @@ export class CheckoutService {
         )
       );
 
-      // Reduce inventory for each item
-      for (const item of validated.items) {
-        if (item.variantId) {
-          // Update variant inventory
-          await tx.productVariant.update({
-            where: { id: item.variantId },
-            data: {
-              inventoryQty: {
-                decrement: item.quantity,
-              },
-            },
-          });
-        } else {
-          // Update product stock
-          await tx.product.update({
-            where: { id: item.productId },
-            data: {
-              inventoryQty: {
-                decrement: item.quantity,
-              },
-            },
-          });
-        }
-      }
-
       return { ...newOrder, items: orderItems };
     });
+
+    // Deduct inventory using InventoryService (atomic with audit logging)
+    // This is done outside the order transaction but is still atomic per item
+    const { InventoryService } = await import('./inventory.service');
+    const inventoryService = InventoryService.getInstance();
+    
+    const inventoryItems = validated.items.map((item) => ({
+      productId: item.productId,
+      variantId: item.variantId,
+      quantity: item.quantity,
+    }));
+
+    await inventoryService.deductStockForOrder(
+      input.storeId,
+      inventoryItems,
+      order.id
+    );
 
     return {
       id: order.id,

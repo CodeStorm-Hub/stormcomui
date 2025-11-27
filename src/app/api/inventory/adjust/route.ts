@@ -4,16 +4,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { InventoryService } from '@/lib/services/inventory.service';
+import { InventoryService, InventoryAdjustmentReason } from '@/lib/services/inventory.service';
 import { z } from 'zod';
 
 const adjustStockSchema = z.object({
   storeId: z.string(),
   productId: z.string(),
+  variantId: z.string().optional(),
   quantity: z.number().int().nonnegative(),
   type: z.enum(['ADD', 'REMOVE', 'SET']),
-  reason: z.string().min(1),
+  reason: z.nativeEnum(InventoryAdjustmentReason),
   note: z.string().optional(),
+  orderId: z.string().optional(),
 });
 
 // POST /api/inventory/adjust - Adjust product stock levels
@@ -53,6 +55,17 @@ export async function POST(request: NextRequest) {
           details: error.issues,
         },
         { status: 400 }
+      );
+    }
+
+    // Handle insufficient stock error with 409 Conflict
+    if (error instanceof Error && error.message.includes('Cannot remove')) {
+      return NextResponse.json(
+        {
+          error: 'Insufficient stock',
+          details: error.message,
+        },
+        { status: 409 }
       );
     }
 
