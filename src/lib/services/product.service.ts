@@ -102,13 +102,21 @@ export const createProductSchema = z.object({
   brandId: z.string().cuid().optional().nullable(),
   images: z.array(z.string().url()).default([]),
   thumbnailUrl: z.string().url().optional().nullable(),
+  // SEO fields
   metaTitle: z.string().max(255).optional().nullable(),
   metaDescription: z.string().max(500).optional().nullable(),
   metaKeywords: z.string().optional().nullable(),
+  seoTitle: z.string().max(255).optional().nullable(),
+  seoDescription: z.string().max(500).optional().nullable(),
   status: z.nativeEnum(ProductStatus).default(ProductStatus.DRAFT),
   isFeatured: z.boolean().default(false),
   // Variants support (min 0, max 100)
   variants: z.array(variantSchema).min(0).max(100).optional(),
+  // Product attributes (custom attributes)
+  attributes: z.array(z.object({
+    attributeId: z.string().cuid(),
+    value: z.string().min(1),
+  })).optional(),
 });
 
 export const updateProductSchema = createProductSchema.partial().extend({
@@ -425,9 +433,12 @@ export class ProductService {
       height: validatedData.height,
       images: JSON.stringify(validatedData.images),
       thumbnailUrl: validatedData.thumbnailUrl || validatedData.images[0] || null,
+      // SEO fields
       metaTitle: validatedData.metaTitle,
       metaDescription: validatedData.metaDescription,
       metaKeywords: validatedData.metaKeywords,
+      seoTitle: validatedData.seoTitle,
+      seoDescription: validatedData.seoDescription,
       status: validatedData.status,
       publishedAt: validatedData.status === ProductStatus.ACTIVE ? new Date() : null,
       isFeatured: validatedData.isFeatured,
@@ -465,6 +476,16 @@ export class ProductService {
       };
     }
 
+    // Add product attributes if provided
+    if (validatedData.attributes && validatedData.attributes.length > 0) {
+      productData.attributes = {
+        create: validatedData.attributes.map(attr => ({
+          attribute: { connect: { id: attr.attributeId } },
+          value: attr.value,
+        })),
+      };
+    }
+
     const product = await prisma.product.create({
       data: productData,
       include: {
@@ -475,6 +496,21 @@ export class ProductService {
           select: { id: true, name: true, slug: true },
         },
         variants: true,
+        attributes: {
+          select: {
+            id: true,
+            productId: true,
+            attributeId: true,
+            value: true,
+            attribute: {
+              select: {
+                id: true,
+                name: true,
+                values: true,
+              },
+            },
+          },
+        },
         _count: {
           select: {
             orderItems: true,
@@ -522,8 +558,8 @@ export class ProductService {
       inventoryStatus = this.calculateInventoryStatus(validatedData.inventoryQty, lowStockThreshold);
     }
 
-    // Prepare update data (exclude JSON fields like images and variants from direct spread to satisfy Prisma types)
-    const { images: imagesArr, variants: variantsArr, ...rest } = validatedData as UpdateProductData & { images?: string[]; variants?: VariantData[] };
+    // Prepare update data (exclude JSON fields like images, variants, and attributes from direct spread to satisfy Prisma types)
+    const { images: imagesArr, variants: variantsArr, attributes: attributesArr, ...rest } = validatedData as UpdateProductData & { images?: string[]; variants?: VariantData[]; attributes?: { attributeId: string; value: string }[] };
     const updateData: Prisma.ProductUpdateInput = {
       ...rest,
       inventoryStatus,
@@ -603,7 +639,7 @@ export class ProductService {
         throw new Error(`Duplicate variant SKUs in request: ${[...new Set(duplicates)].join(', ')}`);
       }
 
-      // Use a transaction to handle variant updates individually
+      // Use a transaction to handle variant and attribute updates atomically
       await prisma.$transaction(async (tx) => {
         // Delete variants that are no longer in the list
         if (variantIdsToDelete.length > 0) {
@@ -651,6 +687,41 @@ export class ProductService {
             })),
           });
         }
+
+        // Handle attributes update within the same transaction
+        if (attributesArr !== undefined) {
+          // Delete existing attributes and create new ones
+          await tx.productAttributeValue.deleteMany({
+            where: { productId },
+          });
+          
+          if (attributesArr.length > 0) {
+            await tx.productAttributeValue.createMany({
+              data: attributesArr.map(attr => ({
+                productId,
+                attributeId: attr.attributeId,
+                value: attr.value,
+              })),
+            });
+          }
+        }
+      });
+    } else if (attributesArr !== undefined) {
+      // Handle attributes update when no variants are being updated
+      await prisma.$transaction(async (tx) => {
+        await tx.productAttributeValue.deleteMany({
+          where: { productId },
+        });
+        
+        if (attributesArr.length > 0) {
+          await tx.productAttributeValue.createMany({
+            data: attributesArr.map(attr => ({
+              productId,
+              attributeId: attr.attributeId,
+              value: attr.value,
+            })),
+          });
+        }
       });
     }
 
@@ -678,6 +749,21 @@ export class ProductService {
             image: true,
           },
           orderBy: { isDefault: 'desc' },
+        },
+        attributes: {
+          select: {
+            id: true,
+            productId: true,
+            attributeId: true,
+            value: true,
+            attribute: {
+              select: {
+                id: true,
+                name: true,
+                values: true,
+              },
+            },
+          },
         },
         _count: {
           select: {
