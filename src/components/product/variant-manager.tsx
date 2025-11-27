@@ -8,7 +8,8 @@ import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Table,
   TableBody,
@@ -194,15 +195,20 @@ export function VariantManager({
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0">
-        <CardTitle className="text-base font-medium">
-          Variants ({variants.length}/{MAX_VARIANTS})
-        </CardTitle>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <div>
+          <CardTitle className="text-lg font-semibold">
+            Variants ({variants.length}/{MAX_VARIANTS})
+          </CardTitle>
+          <CardDescription className="mt-1.5">
+            Manage product variants with different options like size, color, or material
+          </CardDescription>
+        </div>
         {!disabled && !isAdding && variants.length < MAX_VARIANTS && (
           <Button
             type="button"
             variant="outline"
-            size="sm"
+            size="default"
             onClick={() => setIsAdding(true)}
           >
             <Plus className="mr-2 h-4 w-4" />
@@ -210,11 +216,11 @@ export function VariantManager({
           </Button>
         )}
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-6">
         {/* Add new variant form */}
         {isAdding && (
-          <div className="mb-4 rounded-lg border bg-muted/50 p-4">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-lg border-2 border-dashed border-primary/20 bg-muted/30 p-6">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-2">
                 <Label htmlFor="new-variant-name">Name *</Label>
                 <Input
@@ -303,7 +309,7 @@ export function VariantManager({
 
         {/* Variants table */}
         {variants.length > 0 ? (
-          <div className="overflow-x-auto rounded-lg border">
+          <ScrollArea className="h-[500px] rounded-lg border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -463,19 +469,24 @@ export function VariantManager({
                 ))}
               </TableBody>
             </Table>
-          </div>
+          </ScrollArea>
         ) : (
-          <div className="rounded-lg border border-dashed bg-muted/50 p-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              No variants added yet. Variants allow you to offer different
-              options like size, color, or material.
+          <div className="rounded-lg border-2 border-dashed bg-muted/20 p-12 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+              <Plus className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <p className="text-base font-medium text-foreground mb-2">
+              No variants added yet
+            </p>
+            <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+              Variants allow you to offer different options like size, color, or material for the same product.
             </p>
             {!disabled && !isAdding && (
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
-                className="mt-4"
+                size="default"
+                className="mt-6"
                 onClick={() => setIsAdding(true)}
               >
                 <Plus className="mr-2 h-4 w-4" />

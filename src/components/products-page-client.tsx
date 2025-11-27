@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import {
   Plus,
   Search,
@@ -45,8 +46,12 @@ import {
   X,
   Loader2,
   Filter,
+  Upload,
+  Download,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { BulkImportDialog } from './product/bulk-import-dialog';
+import { ProductExportDialog } from './product/product-export-dialog';
 
 type ProductStatus = 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
 type InventoryStatus = 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK' | 'DISCONTINUED';
@@ -203,31 +208,53 @@ export function ProductsPageClient() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header with store selector and create button */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-4">
-          <label htmlFor="store-selector" className="text-sm font-medium shrink-0">
+    <div className="space-y-8">
+      {/* Header with store selector and actions */}
+      <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <label htmlFor="store-selector" className="text-sm font-semibold shrink-0">
             Store:
           </label>
           <StoreSelector onStoreChange={setStoreId} />
         </div>
         {storeId && (
-          <Link href="/dashboard/products/new">
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Product
-            </Button>
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link href="/dashboard/products/new">
+              <Button size="default" className="shadow-sm">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Product
+              </Button>
+            </Link>
+            <Separator orientation="vertical" className="h-8" />
+            <BulkImportDialog 
+              storeId={storeId}
+              onSuccess={() => setRefreshKey((prev) => prev + 1)}
+              trigger={
+                <Button variant="outline" size="default">
+                  <Upload className="mr-2 h-4 w-4" />
+                  Import
+                </Button>
+              }
+            />
+            <ProductExportDialog
+              storeId={storeId}
+              trigger={
+                <Button variant="outline" size="default">
+                  <Download className="mr-2 h-4 w-4" />
+                  Export
+                </Button>
+              }
+            />
+          </div>
         )}
       </div>
 
       {storeId ? (
         <>
           {/* Search and Filters */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex flex-col gap-4">
+          <Card className="shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex flex-col gap-6">
                 {/* Search and filter toggle */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                   <div className="relative flex-1">
@@ -266,7 +293,9 @@ export function ProductsPageClient() {
 
                 {/* Expandable filters */}
                 {showFilters && (
-                  <div className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-2 lg:grid-cols-4">
+                  <>
+                    <Separator />
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Status</label>
                       <Select
@@ -344,6 +373,7 @@ export function ProductsPageClient() {
                       </Select>
                     </div>
                   </div>
+                  </>
                 )}
 
                 {/* Active filters summary */}
@@ -407,7 +437,7 @@ export function ProductsPageClient() {
 
           {/* Bulk actions bar */}
           {selectedCount > 0 && (
-            <div className="sticky top-0 z-10 flex items-center justify-between rounded-lg border bg-muted/80 p-4 backdrop-blur-sm">
+            <div className="sticky top-0 z-10 flex items-center justify-between rounded-lg border bg-muted/90 px-6 py-4 shadow-lg backdrop-blur-sm">
               <div className="flex items-center gap-3">
                 <Badge variant="secondary" className="text-sm">
                   {selectedCount} selected
@@ -523,11 +553,17 @@ export function ProductsPageClient() {
           </AlertDialog>
         </>
       ) : (
-        <div className="rounded-lg border bg-card p-12 text-center">
-          <p className="text-sm text-muted-foreground">
-            Select a store to view products
-          </p>
-        </div>
+        <Card className="shadow-sm">
+          <CardContent className="flex min-h-[400px] flex-col items-center justify-center p-12 text-center">
+            <div className="rounded-full bg-muted p-6 mb-4">
+              <Plus className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Select a Store</h3>
+            <p className="text-sm text-muted-foreground max-w-sm">
+              Choose a store from the selector above to view and manage products
+            </p>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

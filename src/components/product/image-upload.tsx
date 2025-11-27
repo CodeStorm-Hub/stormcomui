@@ -23,7 +23,7 @@ import {
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -345,11 +345,14 @@ export function ImageUpload({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base font-medium">
+        <CardTitle className="text-lg font-semibold">
           Product Images ({images.length}/{MAX_IMAGES})
         </CardTitle>
+        <CardDescription className="mt-1.5">
+          Upload and manage product images with drag-to-reorder support
+        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
         {/* Drop zone / Upload area */}
         <div
           onDragOver={handleDragOver}
@@ -374,20 +377,20 @@ export function ImageUpload({
           />
 
           {uploading ? (
-            <div className="flex flex-col items-center gap-2">
+            <div className="flex flex-col items-center gap-3">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">{uploadProgress}</p>
+              <p className="text-sm font-medium text-muted-foreground">{uploadProgress}</p>
             </div>
           ) : (
-            <div className="flex flex-col items-center gap-2">
-              <div className="rounded-full bg-muted p-3">
-                <Upload className="h-6 w-6 text-muted-foreground" />
+            <div className="flex flex-col items-center gap-3">
+              <div className="rounded-full bg-muted p-4">
+                <Upload className="h-8 w-8 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-sm font-medium">
+                <p className="text-base font-semibold">
                   Drop images here or click to upload
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-sm text-muted-foreground mt-1.5">
                   JPEG, PNG, GIF, WebP, SVG up to 10MB each
                 </p>
               </div>
@@ -421,20 +424,22 @@ export function ImageUpload({
             </SortableContext>
           </DndContext>
         ) : (
-          <div className="rounded-lg border border-dashed bg-muted/50 p-8 text-center">
-            <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground/50" />
-            <p className="mt-2 text-sm text-muted-foreground">
+          <div className="rounded-lg border-2 border-dashed bg-muted/20 p-12 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+              <ImageIcon className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <p className="text-base font-medium text-foreground mb-2">
               No images uploaded yet
             </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              The first image will be used as the main product image
+            <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+              The first image will be used as the main product image in listings and search results
             </p>
           </div>
         )}
 
         {/* Help text */}
-        <div className="flex items-start gap-2 rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
-          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 rounded-lg bg-muted/50 p-4 text-sm text-muted-foreground">
+          <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
           <p>
             Drag and drop to reorder images. The first image is the main product
             image shown in listings. You can upload up to {MAX_IMAGES} images,

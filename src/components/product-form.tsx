@@ -20,6 +20,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
 import {
   Form,
   FormControl,
@@ -32,6 +34,7 @@ import {
 import { StoreSelector } from '@/components/store-selector';
 import { VariantManager, type ProductVariant } from '@/components/product/variant-manager';
 import { ImageUpload } from '@/components/product/image-upload';
+import { AttributesManager, type ProductAttribute } from '@/components/product/attributes-manager';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
@@ -60,6 +63,7 @@ export function ProductForm() {
   const [loading, setLoading] = useState(false);
   const [storeId, setStoreId] = useState<string>('');
   const [variants, setVariants] = useState<ProductVariant[]>([]);
+  const [attributes, setAttributes] = useState<ProductAttribute[]>([]);
   const [images, setImages] = useState<string[]>([]);
   const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([]);
   const [brands, setBrands] = useState<Array<{ id: string; name: string }>>([]);
@@ -114,6 +118,13 @@ export function ProductForm() {
         inventoryQty: v.stock,
       }));
 
+      // Transform attributes for API
+      const apiAttributes = attributes.map((a) => ({
+        attributeId: a.attributeId,
+        name: a.name,
+        value: a.value,
+      }));
+
       const response = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -132,6 +143,7 @@ export function ProductForm() {
           status: data.status,
           images: images,
           variants: apiVariants.length > 0 ? apiVariants : undefined,
+          attributes: apiAttributes.length > 0 ? apiAttributes : undefined,
         }),
       });
 
@@ -179,7 +191,7 @@ export function ProductForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {/* Store Selection */}
         <Card>
           <CardHeader>
@@ -199,13 +211,24 @@ export function ProductForm() {
           </CardContent>
         </Card>
 
-        {/* Basic Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Basic Information</CardTitle>
-            <CardDescription>Product name, description, and identification</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        {/* Tabs for organizing product form sections */}
+        <Tabs defaultValue="details" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="details">Product Details</TabsTrigger>
+            <TabsTrigger value="pricing">Pricing & Inventory</TabsTrigger>
+            <TabsTrigger value="media">Media</TabsTrigger>
+            <TabsTrigger value="variants">Variants</TabsTrigger>
+            <TabsTrigger value="attributes">Attributes</TabsTrigger>
+          </TabsList>
+
+          {/* Tab 1: Product Details */}
+          <TabsContent value="details" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Basic Information</CardTitle>
+                <CardDescription>Product name, description, and identification</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
             <FormField
               control={form.control}
               name="name"
@@ -240,6 +263,8 @@ export function ProductForm() {
                 </FormItem>
               )}
             />
+
+            <Separator />
 
             <FormField
               control={form.control}
@@ -276,7 +301,9 @@ export function ProductForm() {
               )}
             />
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <Separator />
+
+            <div className="grid gap-6 md:grid-cols-2">
               <FormField
                 control={form.control}
                 name="categoryId"
@@ -327,24 +354,16 @@ export function ProductForm() {
             </div>
           </CardContent>
         </Card>
+      </TabsContent>
 
-        {/* Product Images */}
-        {storeId && (
-          <ImageUpload
-            images={images}
-            onChange={setImages}
-            storeId={storeId}
-            disabled={loading}
-          />
-        )}
-
-        {/* Pricing */}
+      {/* Tab 2: Pricing & Inventory */}
+      <TabsContent value="pricing" className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>Pricing</CardTitle>
             <CardDescription>Set product pricing information</CardDescription>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <CardContent className="grid grid-cols-1 gap-6 md:grid-cols-3">
             <FormField
               control={form.control}
               name="price"
@@ -417,13 +436,14 @@ export function ProductForm() {
           </CardContent>
         </Card>
 
-        {/* Inventory */}
+        <Separator />
+
         <Card>
           <CardHeader>
             <CardTitle>Inventory</CardTitle>
             <CardDescription>Stock management and product status</CardDescription>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <CardContent className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <FormField
               control={form.control}
               name="inventoryQty"
@@ -473,16 +493,62 @@ export function ProductForm() {
             />
           </CardContent>
         </Card>
+      </TabsContent>
 
-        {/* Variants */}
+      {/* Tab 3: Media */}
+      <TabsContent value="media">
+        {storeId && (
+          <ImageUpload
+            images={images}
+            onChange={setImages}
+            storeId={storeId}
+            disabled={loading}
+          />
+        )}
+        {!storeId && (
+          <Card>
+            <CardContent className="flex items-center justify-center p-12">
+              <p className="text-sm text-muted-foreground">
+                Please select a store to upload images
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </TabsContent>
+
+      {/* Tab 4: Variants */}
+      <TabsContent value="variants">
         <VariantManager
           variants={variants}
           onChange={setVariants}
           disabled={loading}
         />
+      </TabsContent>
+
+      {/* Tab 5: Attributes */}
+      <TabsContent value="attributes">
+        {storeId && (
+          <AttributesManager
+            storeId={storeId}
+            attributes={attributes}
+            onChange={setAttributes}
+            disabled={loading}
+          />
+        )}
+        {!storeId && (
+          <Card>
+            <CardContent className="flex items-center justify-center p-12">
+              <p className="text-sm text-muted-foreground">
+                Please select a store to manage attributes
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </TabsContent>
+    </Tabs>
 
         {/* Actions */}
-        <div className="flex gap-4">
+        <div className="flex gap-6">
           <Button
             type="button"
             variant="outline"

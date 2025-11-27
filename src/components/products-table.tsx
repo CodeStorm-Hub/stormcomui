@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -348,34 +349,38 @@ export function ProductsTable({
 
   if (products.length === 0) {
     return (
-      <div className="rounded-lg border bg-card p-12 text-center">
-        <Package className="mx-auto h-12 w-12 text-muted-foreground" />
-        <h3 className="mt-4 text-lg font-semibold">
+      <Card className="shadow-sm">
+        <CardContent className="flex min-h-[400px] flex-col items-center justify-center p-12 text-center">
+          <div className="rounded-full bg-muted p-6 mb-4">
+            <Package className="h-10 w-10 text-muted-foreground" />
+          </div>
+          <h3 className="text-xl font-semibold mb-2">
           {search || status || inventoryStatus
             ? 'No products found'
             : 'No products yet'}
         </h3>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="mt-2 text-sm text-muted-foreground max-w-md">
           {search || status || inventoryStatus
             ? 'Try adjusting your filters to find what you\'re looking for.'
             : 'Get started by creating your first product.'}
         </p>
         {!search && !status && !inventoryStatus && (
           <Link href="/dashboard/products/new">
-            <Button className="mt-4">Create Product</Button>
+            <Button className="mt-6">Create Product</Button>
           </Link>
         )}
-      </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className={`rounded-lg border bg-card ${isPending ? 'opacity-60' : ''}`}>
+      <div className={`rounded-lg border bg-card shadow-sm ${isPending ? 'opacity-60' : ''}`}>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="hover:bg-transparent">
                 {onSelectionChange && (
                   <TableHead className="w-12">
                     <Checkbox
@@ -417,40 +422,43 @@ export function ProductsTable({
                       </TableCell>
                     )}
                     <TableCell>
-                      <div className="relative h-10 w-10 overflow-hidden rounded-md bg-muted">
+                      <div className="relative h-14 w-14 overflow-hidden rounded-md bg-muted ring-1 ring-border">
                         {imageUrl ? (
                           <Image
                             src={imageUrl}
                             alt={product.name}
                             fill
                             className="object-cover"
-                            sizes="40px"
+                            sizes="56px"
                           />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center">
-                            <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                            <ImageIcon className="h-5 w-5 text-muted-foreground" />
                           </div>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-col">
+                      <div className="flex flex-col gap-1.5">
                         <Link
                           href={`/dashboard/products/${product.id}`}
-                          className="font-medium hover:underline"
+                          className="font-semibold hover:underline line-clamp-1"
                         >
                           {product.name}
                         </Link>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           {product.category && (
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-xs font-medium text-muted-foreground">
                               {product.category.name}
                             </span>
                           )}
                           {product.brand && (
-                            <span className="text-xs text-muted-foreground">
-                              {product.brand.name}
-                            </span>
+                            <>
+                              {product.category && <span className="text-xs text-muted-foreground">•</span>}
+                              <span className="text-xs font-medium text-muted-foreground">
+                                {product.brand.name}
+                              </span>
+                            </>
                           )}
                         </div>
                       </div>
@@ -462,8 +470,8 @@ export function ProductsTable({
                       ${product.price.toFixed(2)}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
-                      <div className="flex flex-col gap-1">
-                        <span className="text-sm">{product.inventoryQty}</span>
+                      <div className="flex flex-col gap-2">
+                        <span className="text-sm font-medium">{product.inventoryQty}</span>
                         <Badge variant={getInventoryBadgeVariant(product.inventoryStatus)}>
                           {product.inventoryStatus.replace(/_/g, ' ')}
                         </Badge>
