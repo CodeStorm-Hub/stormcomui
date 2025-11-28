@@ -8,6 +8,7 @@ import { requirePermission } from '@/lib/auth-helpers';
 import { prisma } from '@/lib/prisma';
 import { Role } from '@prisma/client';
 import { z } from 'zod';
+import { AuditLogService } from '@/lib/services/audit-log.service';
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -98,9 +99,15 @@ export async function PATCH(
   try {
     await requirePermission('staff:update');
 
+    const session = await getServerSession(authOptions);
     const params = await context.params;
     const body = await request.json();
     const validatedData = UpdateStoreStaffSchema.parse(body);
+
+    // Get old data for audit log
+    const oldData = await prisma.storeStaff.findUnique({
+      where: { id: params.id },
+    });
 
     const storeStaff = await prisma.storeStaff.update({
       where: { id: params.id },
@@ -122,6 +129,33 @@ export async function PATCH(
         },
       },
     });
+
+    // Log the change
+    if (session?.user?.id && oldData) {
+      const auditService = AuditLogService.getInstance();
+      const changes: Record<string, any> = {};
+      if (oldData.role !== storeStaff.role) {
+        changes.role = { old: oldData.role, new: storeStaff.role };
+      }
+      if (oldData.isActive !== storeStaff.isActive) {
+        changes.isActive = { old: oldData.isActive, new: storeStaff.isActive };
+      }
+      
+      await auditService.create(
+        'UPDATE',
+        'StoreStaff',
+        storeStaff.id,
+        {
+          userId: session.user.id,
+          storeId: storeStaff.storeId,
+          changes,
+          metadata: {
+            ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
+            userAgent: request.headers.get('user-agent') || undefined,
+          },
+        }
+      );
+    }
 
     return NextResponse.json(storeStaff);
   } catch (error) {
@@ -156,11 +190,54 @@ export async function DELETE(
   try {
     await requirePermission('staff:delete');
 
+    const session = await getServerSession(authOptions);
     const params = await context.params;
+    
+    // Get staff data before deletion for audit log
+    const staffData = await prisma.storeStaff.findUnique({
+      where: { id: params.id },
+      include: {
+        user: {
+          select: {
+            email: true,
+            name: true,
+          },
+        },
+      },
+    });
     
     await prisma.storeStaff.delete({
       where: { id: params.id },
     });
+
+    // Log the deletion
+    if (session?.user?.id && staffData) {
+      const auditService = AuditLogService.getInstance();
+      await auditService.create(
+        'DELETE',
+        'StoreStaff',
+        params.id,
+        {
+          userId: session.user.id,
+          storeId: staffData.storeId,
+          changes: {
+            deletedUser: {
+              old: {
+                userId: staffData.userId,
+                role: staffData.role,
+                userEmail: staffData.user.email,
+                userName: staffData.user.name,
+              },
+              new: null,
+            },
+          },
+          metadata: {
+            ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
+            userAgent: request.headers.get('user-agent') || undefined,
+          },
+        }
+      );
+    }
 
     return NextResponse.json({ 
       success: true,

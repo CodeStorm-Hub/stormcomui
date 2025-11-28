@@ -454,12 +454,10 @@ export class ProductService {
       height: validatedData.height,
       images: JSON.stringify(validatedData.images),
       thumbnailUrl: validatedData.thumbnailUrl || validatedData.images[0] || null,
-      // SEO fields
-      metaTitle: validatedData.metaTitle,
-      metaDescription: validatedData.metaDescription,
+      // SEO fields (map to meta fields)
+      metaTitle: validatedData.metaTitle || validatedData.seoTitle,
+      metaDescription: validatedData.metaDescription || validatedData.seoDescription,
       metaKeywords: validatedData.metaKeywords,
-      seoTitle: validatedData.seoTitle,
-      seoDescription: validatedData.seoDescription,
       status: validatedData.status,
       publishedAt: validatedData.status === ProductStatus.ACTIVE ? new Date() : null,
       isFeatured: validatedData.isFeatured,
