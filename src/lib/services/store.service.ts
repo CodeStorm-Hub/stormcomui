@@ -27,7 +27,7 @@ export const CreateStoreSchema = z.object({
   timezone: z.string().default('UTC'),
   locale: z.string().default('en'),
   subscriptionPlan: z.nativeEnum(SubscriptionPlan).default(SubscriptionPlan.FREE),
-  organizationId: z.string(),
+  organizationId: z.string().optional(), // Optional - will be derived from session if not provided
 });
 
 export type CreateStoreInput = z.infer<typeof CreateStoreSchema>;
@@ -109,10 +109,18 @@ export class StoreService {
       throw new Error(`Store with slug '${input.slug}' already exists`);
     }
 
-    // Create store
+    // Destructure to separate organizationId from other fields
+    const { organizationId, ...storeData } = input;
+
+    // Create store - organizationId must be provided at this point
+    if (!organizationId) {
+      throw new Error('organizationId is required to create a store');
+    }
+
     const store = await prisma.store.create({
       data: {
-        ...input,
+        ...storeData,
+        organizationId,
         subscriptionStatus: SubscriptionStatus.TRIAL,
         trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days trial
       },

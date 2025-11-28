@@ -68,12 +68,13 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid email or password");
         }
 
-        // Return user object
+        // Return user object with isSuperAdmin field
         return {
           id: user.id,
           email: user.email,
           name: user.name,
           image: user.image,
+          isSuperAdmin: user.isSuperAdmin || false,
         };
       }
     }),
@@ -86,7 +87,56 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async session({ session, token }) {
       if (session.user && token?.sub) {
-        (session.user as typeof session.user & { id: string }).id = token.sub;
+        const userId = token.sub;
+        (session.user as typeof session.user & { id: string }).id = userId;
+
+        // Fetch user roles and permissions
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          include: {
+            memberships: {
+              include: {
+                organization: {
+                  include: { store: true },
+                },
+              },
+              orderBy: { createdAt: 'asc' },
+              take: 1,
+            },
+            storeStaff: {
+              where: { isActive: true },
+              include: { store: true },
+              orderBy: { createdAt: 'asc' },
+              take: 1,
+            },
+          },
+        });
+
+        if (user) {
+          const membership = user.memberships[0];
+          const storeStaff = user.storeStaff[0];
+
+          (session.user as any).isSuperAdmin = user.isSuperAdmin;
+          (session.user as any).organizationRole = membership?.role;
+          (session.user as any).organizationId = membership?.organizationId;
+          (session.user as any).storeRole = storeStaff?.role;
+          (session.user as any).storeId = storeStaff?.storeId || membership?.organization?.store?.id;
+
+          // Compute permissions
+          const { getPermissions } = await import('./permissions');
+          let permissions: string[] = [];
+          
+          if (user.isSuperAdmin) {
+            permissions = ['*'];
+          } else {
+            const effectiveRole = storeStaff?.role || membership?.role;
+            if (effectiveRole) {
+              permissions = getPermissions(effectiveRole);
+            }
+          }
+          
+          (session.user as any).permissions = permissions;
+        }
       }
       return session;
     },

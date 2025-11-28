@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { StoreService, CreateStoreSchema } from '@/lib/services/store.service';
+import { requireOrganizationId } from '@/lib/get-current-user';
 import { SubscriptionPlan, SubscriptionStatus } from '@prisma/client';
 import { z } from 'zod';
 
@@ -89,6 +90,19 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = CreateStoreSchema.parse(body);
 
+    // Get organizationId from session if not provided in request
+    let organizationId = validatedData.organizationId;
+    if (!organizationId) {
+      try {
+        organizationId = await requireOrganizationId();
+      } catch (error) {
+        return NextResponse.json(
+          { error: 'Organization required. Please create or join an organization first.' },
+          { status: 400 }
+        );
+      }
+    }
+
     const storeService = StoreService.getInstance();
     
     // Check slug availability
@@ -100,7 +114,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const store = await storeService.create(validatedData, session.user.id);
+    const store = await storeService.create(
+      { ...validatedData, organizationId },
+      session.user.id
+    );
 
     return NextResponse.json(
       {

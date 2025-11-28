@@ -167,3 +167,43 @@ export async function requireVerifiedStoreAccess(storeId: string): Promise<strin
   
   return storeId;
 }
+
+/**
+ * Get current user's default organization ID
+ * Returns the first organization membership
+ * @returns Organization ID or null if user has no memberships
+ */
+export async function getCurrentOrganizationId(): Promise<string | null> {
+  const session = await getServerSession(authOptions);
+  
+  if (!session?.user?.id) {
+    return null;
+  }
+
+  // Find user's first membership
+  const membership = await prisma.membership.findFirst({
+    where: {
+      userId: session.user.id,
+    },
+    orderBy: {
+      createdAt: 'asc', // Get the oldest/first membership
+    },
+  });
+
+  return membership?.organizationId || null;
+}
+
+/**
+ * Require organization access - throws error if user has no organization
+ * @throws Error if no organization found
+ * @returns Organization ID
+ */
+export async function requireOrganizationId(): Promise<string> {
+  const organizationId = await getCurrentOrganizationId();
+  
+  if (!organizationId) {
+    throw new Error('Organization access required. Please create or join an organization.');
+  }
+  
+  return organizationId;
+}
