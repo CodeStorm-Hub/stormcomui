@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
+import { checkPermission } from '@/lib/auth-helpers';
 import { StoreService, UpdateStoreSchema } from '@/lib/services/store.service';
 import { z } from 'zod';
 
@@ -54,6 +55,15 @@ export async function PUT(
       );
     }
 
+    // Check permission
+    const hasPermission = await checkPermission('stores:update');
+    if (!hasPermission) {
+      return NextResponse.json(
+        { error: 'Permission denied. You do not have permission to update stores.' },
+        { status: 403 }
+      );
+    }
+
     const { id } = await params;
     const body = await request.json();
     const validatedData = UpdateStoreSchema.parse(body);
@@ -100,6 +110,15 @@ export async function DELETE(
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
+      );
+    }
+
+    // Check permission
+    const hasPermission = await checkPermission('stores:delete');
+    if (!hasPermission) {
+      return NextResponse.json(
+        { error: 'Permission denied. You do not have permission to delete stores.' },
+        { status: 403 }
       );
     }
 

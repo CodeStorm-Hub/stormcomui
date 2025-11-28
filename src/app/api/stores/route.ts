@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
+import { checkPermission } from '@/lib/auth-helpers';
 import { StoreService, CreateStoreSchema } from '@/lib/services/store.service';
 import { requireOrganizationId } from '@/lib/get-current-user';
 import { SubscriptionPlan, SubscriptionStatus } from '@prisma/client';
@@ -84,6 +85,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
+      );
+    }
+
+    // Check permission
+    const hasPermission = await checkPermission('stores:create');
+    if (!hasPermission) {
+      return NextResponse.json(
+        { error: 'Permission denied. You do not have permission to create stores.' },
+        { status: 403 }
       );
     }
 
