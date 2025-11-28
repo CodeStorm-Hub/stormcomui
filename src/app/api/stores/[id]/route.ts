@@ -5,14 +5,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { checkPermission } from '@/lib/auth-helpers';
+import { withRateLimit } from '@/middleware/rate-limit';
 import { StoreService, UpdateStoreSchema } from '@/lib/services/store.service';
 import { z } from 'zod';
 
 // GET /api/stores/[id] - Get store by ID
-export async function GET(
+export const GET = withRateLimit(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const session = await getServerSession(authOptions);
 
@@ -38,13 +39,13 @@ export async function GET(
       { status: error instanceof Error && error.message === 'Store not found' ? 404 : 500 }
     );
   }
-}
+});
 
 // PUT /api/stores/[id] - Update store
-export async function PUT(
+export const PUT = withRateLimit(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const session = await getServerSession(authOptions);
 
@@ -96,13 +97,13 @@ export async function PUT(
       { status: 500 }
     );
   }
-}
+});
 
 // DELETE /api/stores/[id] - Delete store (soft delete)
-export async function DELETE(
+export const DELETE = withRateLimit(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const session = await getServerSession(authOptions);
 
@@ -139,4 +140,4 @@ export async function DELETE(
       { status: 500 }
     );
   }
-}
+});
