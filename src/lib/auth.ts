@@ -61,7 +61,7 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid email or password");
         }
 
-        // Verify password
+        // Verify password with timing-safe comparison
         const isValid = await bcrypt.compare(credentials.password, user.passwordHash);
 
         if (!isValid) {

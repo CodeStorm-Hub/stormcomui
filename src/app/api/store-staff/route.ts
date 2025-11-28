@@ -27,6 +27,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const storeId = searchParams.get('storeId');
     
@@ -34,6 +42,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         { error: 'storeId is required' },
         { status: 400 }
+      );
+    }
+
+    // Verify user has access to this store
+    const userMembership = await prisma.membership.findFirst({
+      where: {
+        userId: session.user.id,
+        organization: {
+          store: {
+            id: storeId,
+          },
+        },
+      },
+    });
+
+    if (!userMembership) {
+      return NextResponse.json(
+        { error: 'Access denied. You do not have access to this store.' },
+        { status: 403 }
       );
     }
 
