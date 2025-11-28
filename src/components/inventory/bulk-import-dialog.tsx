@@ -132,8 +132,8 @@ export function BulkImportDialog({
       const line = lines[i].trim();
       if (!line) continue;
 
-      // Parse CSV with basic RFC 4180 support for quoted fields
-      // Handles quoted values containing commas, e.g., "Damaged, needs replacement"
+      // Parse CSV with full RFC 4180 support for quoted fields
+      // Handles: commas in quotes, escaped quotes (""), and proper field boundaries
       const parts: string[] = [];
       let current = '';
       let inQuotes = false;
@@ -141,7 +141,14 @@ export function BulkImportDialog({
       for (let j = 0; j < line.length; j++) {
         const char = line[j];
         if (char === '"') {
-          inQuotes = !inQuotes;
+          // RFC 4180: escaped quote within quoted field is ""
+          // Check bounds before accessing next character
+          if (inQuotes && j + 1 < line.length && line[j + 1] === '"') {
+            current += '"';
+            j++; // Skip the next quote
+          } else {
+            inQuotes = !inQuotes;
+          }
         } else if (char === ',' && !inQuotes) {
           parts.push(current.trim().replace(/^"|"$/g, ''));
           current = '';
