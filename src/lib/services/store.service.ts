@@ -112,15 +112,52 @@ export class StoreService {
     // Destructure to separate organizationId from other fields
     const { organizationId, ...storeData } = input;
 
-    // Create store - organizationId must be provided at this point
-    if (!organizationId) {
-      throw new Error('organizationId is required to create a store');
+    // Check if user is super admin
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { isSuperAdmin: true },
+    });
+
+    // If no organizationId provided, create one (for super admins)
+    let finalOrganizationId = organizationId;
+    if (!finalOrganizationId) {
+      if (!user?.isSuperAdmin) {
+        throw new Error('organizationId is required to create a store');
+      }
+      
+      // Auto-create organization for the store with unique slug
+      let orgSlug = `${input.slug}-org`;
+      let orgName = `${input.name} Organization`;
+      
+      // Check if organization slug already exists
+      const existingOrg = await prisma.organization.findUnique({
+        where: { slug: orgSlug },
+      });
+      
+      if (existingOrg) {
+        // Add timestamp suffix to make it unique
+        orgSlug = `${input.slug}-org-${Date.now()}`;
+      }
+      
+      const organization = await prisma.organization.create({
+        data: {
+          name: orgName,
+          slug: orgSlug,
+          memberships: {
+            create: {
+              userId,
+              role: 'OWNER',
+            },
+          },
+        },
+      });
+      finalOrganizationId = organization.id;
     }
 
     const store = await prisma.store.create({
       data: {
         ...storeData,
-        organizationId,
+        organizationId: finalOrganizationId,
         subscriptionStatus: SubscriptionStatus.TRIAL,
         trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days trial
       },

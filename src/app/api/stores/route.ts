@@ -92,14 +92,20 @@ export async function POST(request: NextRequest) {
 
     // Get organizationId from session if not provided in request
     let organizationId = validatedData.organizationId;
+    const isSuperAdmin = (session.user as { isSuperAdmin?: boolean }).isSuperAdmin || false;
+    
     if (!organizationId) {
-      try {
-        organizationId = await requireOrganizationId();
-      } catch (error) {
-        return NextResponse.json(
-          { error: 'Organization required. Please create or join an organization first.' },
-          { status: 400 }
-        );
+      // Super admins can create stores without existing organization
+      // Organization will be auto-created by the service
+      if (!isSuperAdmin) {
+        try {
+          organizationId = await requireOrganizationId();
+        } catch {
+          return NextResponse.json(
+            { error: 'Organization required. Please create or join an organization first.' },
+            { status: 400 }
+          );
+        }
       }
     }
 
