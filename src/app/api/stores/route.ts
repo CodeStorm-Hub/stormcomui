@@ -5,13 +5,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { checkPermission } from '@/lib/auth-helpers';
+import { withRateLimit } from '@/middleware/rate-limit';
 import { StoreService, CreateStoreSchema } from '@/lib/services/store.service';
 import { requireOrganizationId } from '@/lib/get-current-user';
 import { SubscriptionPlan, SubscriptionStatus } from '@prisma/client';
 import { z } from 'zod';
 
 // GET /api/stores - List stores with pagination and filtering
-export async function GET(request: NextRequest) {
+export const GET = withRateLimit(async (request: NextRequest) => {
   try {
     const session = await getServerSession(authOptions);
 
@@ -74,10 +75,10 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
 
 // POST /api/stores - Create a new store
-export async function POST(request: NextRequest) {
+export const POST = withRateLimit(async (request: NextRequest) => {
   try {
     const session = await getServerSession(authOptions);
 
@@ -169,4 +170,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

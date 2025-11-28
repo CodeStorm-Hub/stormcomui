@@ -16,6 +16,7 @@ import {
   getPermissions,
   Permission,
 } from './permissions';
+import { logPermissionCheck } from './audit-logger';
 
 /**
  * User context with roles and permissions
@@ -139,20 +140,40 @@ export async function checkPermission(permission: Permission): Promise<boolean> 
     return false;
   }
 
+  // Determine effective role for logging
+  const effectiveRole = context.isSuperAdmin 
+    ? 'SUPER_ADMIN' 
+    : (context.storeRole || context.organizationRole || 'NONE');
+
   // Super admin has all permissions
   if (context.isSuperAdmin) {
+    // Log successful permission check
+    await logPermissionCheck(context.userId, permission, effectiveRole, true, {
+      storeId: context.storeId,
+    });
     return true;
   }
 
   // Check store role first (more specific)
   if (context.storeRole && hasPermission(context.storeRole, permission)) {
+    await logPermissionCheck(context.userId, permission, effectiveRole, true, {
+      storeId: context.storeId,
+    });
     return true;
   }
 
   // Check organization role
   if (context.organizationRole && hasPermission(context.organizationRole, permission)) {
+    await logPermissionCheck(context.userId, permission, effectiveRole, true, {
+      storeId: context.storeId,
+    });
     return true;
   }
+
+  // Permission denied - log it
+  await logPermissionCheck(context.userId, permission, effectiveRole, false, {
+    storeId: context.storeId,
+  });
 
   return false;
 }
