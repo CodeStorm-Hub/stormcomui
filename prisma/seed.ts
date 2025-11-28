@@ -183,6 +183,31 @@ async function main() {
   });
   console.log(`✅ Created Marketing Manager: ${marketingManager.email}`);
   
+  // Customer users (registered customers with login accounts)
+  console.log('🛍️ Creating customer users...');
+  
+  const customer1Hash = await bcrypt.hash('Customer123!@#', 12);
+  const customer1User = await prisma.user.create({
+    data: {
+      email: 'customer1@example.com',
+      name: 'John Customer',
+      emailVerified: new Date(),
+      passwordHash: customer1Hash,
+    },
+  });
+  console.log(`✅ Created Customer 1: ${customer1User.email}`);
+  
+  const customer2Hash = await bcrypt.hash('Customer123!@#', 12);
+  const customer2User = await prisma.user.create({
+    data: {
+      email: 'customer2@example.com',
+      name: 'Jane Shopper',
+      emailVerified: new Date(),
+      passwordHash: customer2Hash,
+    },
+  });
+  console.log(`✅ Created Customer 2: ${customer2User.email}`);
+  
   // Assign Store Admin to store
   console.log('👥 Assigning staff to store...');
   await prisma.storeStaff.create({
@@ -486,38 +511,46 @@ async function main() {
 
   // Create customers
   console.log('👨‍👩‍👧‍👦 Creating customers...');
-  const customers = await Promise.all([
+  
+  // Registered customers (linked to user accounts)
+  const customer1Profile = await prisma.customer.create({
+    data: {
+      storeId: store.id,
+      userId: customer1User.id,  // Link to user account
+      email: 'customer1@example.com',
+      firstName: 'John',
+      lastName: 'Customer',
+      phone: '+1-555-0101',
+      acceptsMarketing: true,
+      marketingOptInAt: new Date(),
+      totalOrders: 0,
+      totalSpent: 0,
+    },
+  });
+  
+  const customer2Profile = await prisma.customer.create({
+    data: {
+      storeId: store.id,
+      userId: customer2User.id,  // Link to user account
+      email: 'customer2@example.com',
+      firstName: 'Jane',
+      lastName: 'Shopper',
+      phone: '+1-555-0102',
+      acceptsMarketing: false,
+      totalOrders: 0,
+      totalSpent: 0,
+    },
+  });
+  
+  // Guest customers (no user accounts)
+  const guestCustomers = await Promise.all([
     prisma.customer.create({
       data: {
         storeId: store.id,
+        userId: null,  // Guest checkout
         email: 'john.doe@example.com',
         firstName: 'John',
         lastName: 'Doe',
-        phone: '+1-555-0101',
-        acceptsMarketing: true,
-        marketingOptInAt: new Date(),
-        totalOrders: 0,
-        totalSpent: 0,
-      },
-    }),
-    prisma.customer.create({
-      data: {
-        storeId: store.id,
-        email: 'jane.smith@example.com',
-        firstName: 'Jane',
-        lastName: 'Smith',
-        phone: '+1-555-0102',
-        acceptsMarketing: false,
-        totalOrders: 0,
-        totalSpent: 0,
-      },
-    }),
-    prisma.customer.create({
-      data: {
-        storeId: store.id,
-        email: 'bob.wilson@example.com',
-        firstName: 'Bob',
-        lastName: 'Wilson',
         phone: '+1-555-0103',
         acceptsMarketing: true,
         marketingOptInAt: new Date(),
@@ -528,12 +561,12 @@ async function main() {
     prisma.customer.create({
       data: {
         storeId: store.id,
-        email: 'alice.johnson@example.com',
-        firstName: 'Alice',
-        lastName: 'Johnson',
+        userId: null,  // Guest checkout
+        email: 'jane.smith@example.com',
+        firstName: 'Jane',
+        lastName: 'Smith',
         phone: '+1-555-0104',
-        acceptsMarketing: true,
-        marketingOptInAt: new Date(),
+        acceptsMarketing: false,
         totalOrders: 0,
         totalSpent: 0,
       },
@@ -541,17 +574,21 @@ async function main() {
     prisma.customer.create({
       data: {
         storeId: store.id,
-        email: 'charlie.brown@example.com',
-        firstName: 'Charlie',
-        lastName: 'Brown',
+        userId: null,  // Guest checkout
+        email: 'bob.wilson@example.com',
+        firstName: 'Bob',
+        lastName: 'Wilson',
         phone: '+1-555-0105',
-        acceptsMarketing: false,
+        acceptsMarketing: true,
+        marketingOptInAt: new Date(),
         totalOrders: 0,
         totalSpent: 0,
       },
     }),
   ]);
-  console.log(`✅ Created ${customers.length} customers`);
+  
+  const customers = [customer1Profile, customer2Profile, ...guestCustomers];
+  console.log(`✅ Created ${customers.length} customers (2 registered + 3 guests)`);
 
   // Create orders with different statuses
   console.log('🛒 Creating orders...');
@@ -870,14 +907,14 @@ async function main() {
 
   console.log('\n🎉 Database seeding completed successfully!');
   console.log('\n📊 Summary:');
-  console.log(`   - Users: 8 (1 Owner + 1 Super Admin + 6 Staff Members)`);
+  console.log(`   - Users: 10 (1 Owner + 1 Super Admin + 6 Staff + 2 Customers)`);
   console.log(`   - Organizations: 1`);
   console.log(`   - Stores: 1 (ID: ${store.id})`);
   console.log(`   - Store Staff Assignments: 6`);
   console.log(`   - Categories: 3`);
   console.log(`   - Brands: 3`);
   console.log(`   - Products: ${products.length}`);
-  console.log(`   - Customers: ${customers.length}`);
+  console.log(`   - Customers: ${customers.length} (2 registered + 3 guests)`);
   console.log(`   - Orders: ${orders.length}`);
   console.log('\n🔑 Test Credentials:');
   console.log(`\n   🏢 Organization Owner:`);
@@ -920,6 +957,16 @@ async function main() {
   console.log(`   Password: Marketing123!@#`);
   console.log(`   Role: MARKETING_MANAGER`);
   console.log(`   Access: Campaigns, analytics, customer insights`);
+  console.log(`\n   🛍️  Customer (Registered #1):`);
+  console.log(`   Email: customer1@example.com`);
+  console.log(`   Password: Customer123!@#`);
+  console.log(`   Role: CUSTOMER`);
+  console.log(`   Access: Browse, order, manage profile, track orders`);
+  console.log(`\n   🛍️  Customer (Registered #2):`);
+  console.log(`   Email: customer2@example.com`);
+  console.log(`   Password: Customer123!@#`);
+  console.log(`   Role: CUSTOMER`);
+  console.log(`   Access: Browse, order, manage profile, track orders`);
   console.log(`\n   Store ID: ${store.id}`);
 }
 

@@ -179,6 +179,76 @@ Access:   Marketing campaigns, analytics, customer insights
 
 ---
 
+## 🛍️ Customer Accounts
+
+### Customer (Registered #1)
+```
+Email:    customer1@example.com
+Password: Customer123!@#
+Role:     CUSTOMER (End-user)
+Access:   Browse products, place orders, manage profile
+```
+
+**Permissions:**
+- ✅ **Browse Products** - View product catalog, search, filter
+- ✅ **Place Orders** - Create new orders, add to cart
+- ✅ **Order Tracking** - View own order history and tracking
+- ✅ **Profile Management** - Update personal information, addresses
+- ✅ **Wishlist** - Add/remove products from wishlist
+- ✅ **Reviews** - Write and manage product reviews
+- ✅ **Support Tickets** - Submit and track support requests
+- ❌ Cannot view other customers' data
+- ❌ Cannot access admin interfaces
+- ❌ Cannot view inventory or analytics
+- ❌ Cannot manage other users
+
+**Profile Info:**
+- First Name: John
+- Last Name: Customer
+- Phone: +1-555-0101
+- Marketing Opt-in: Yes
+- Registered user (linked to User account)
+
+---
+
+### Customer (Registered #2)
+```
+Email:    customer2@example.com
+Password: Customer123!@#
+Role:     CUSTOMER (End-user)
+Access:   Browse products, place orders, manage profile
+```
+
+**Permissions:**
+- ✅ **Browse Products** - View product catalog, search, filter
+- ✅ **Place Orders** - Create new orders, add to cart
+- ✅ **Order Tracking** - View own order history and tracking
+- ✅ **Profile Management** - Update personal information, addresses
+- ✅ **Wishlist** - Add/remove products from wishlist
+- ✅ **Reviews** - Write and manage product reviews
+- ✅ **Support Tickets** - Submit and track support requests
+- ❌ Cannot view other customers' data
+- ❌ Cannot access admin interfaces
+- ❌ Cannot view inventory or analytics
+- ❌ Cannot manage other users
+
+**Profile Info:**
+- First Name: Jane
+- Last Name: Shopper
+- Phone: +1-555-0102
+- Marketing Opt-in: No
+- Registered user (linked to User account)
+
+---
+
+### Guest Customers
+**Note**: The following customers are "guest checkout" customers (no user account, cannot log in):
+- john.doe@example.com - Guest customer (has orders, no login)
+- jane.smith@example.com - Guest customer
+- bob.wilson@example.com - Guest customer
+
+---
+
 ## 🏢 Organization & Platform Roles
 ```
 Email:    superadmin@example.com
@@ -241,11 +311,11 @@ Timezone:   America/Los_Angeles
 - MacBook Pro 16" ($2499.99) - DRAFT (not published)
 
 ### Customers (5)
-- john.doe@example.com
-- jane.smith@example.com
-- bob.wilson@example.com
-- alice.johnson@example.com
-- charlie.brown@example.com
+- customer1@example.com - **Registered** (can log in)
+- customer2@example.com - **Registered** (can log in)
+- john.doe@example.com - Guest (no login)
+- jane.smith@example.com - Guest (no login)
+- bob.wilson@example.com - Guest (no login)
 
 ### Orders (7)
 - ORD-00001: PENDING ($1099.98)
