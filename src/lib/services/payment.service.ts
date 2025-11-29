@@ -147,6 +147,14 @@ export type PaymentAttemptWithTransactions = Prisma.PaymentAttemptGetPayload<{
 }>;
 
 /**
+ * Result of creating a payment attempt
+ */
+export interface CreatePaymentAttemptResult {
+  attempt: PaymentAttemptWithTransactions;
+  isExisting: boolean;
+}
+
+/**
  * Result of reconciliation check
  */
 export interface ReconciliationResult {
@@ -244,11 +252,13 @@ export class PaymentService {
    *
    * If an idempotency key is provided and an attempt with that key exists,
    * returns the existing attempt instead of creating a new one.
+   *
+   * @returns Object containing the attempt and whether it was an existing attempt
    */
   async createAttempt(
     input: CreatePaymentAttemptInput,
     metadata?: { userId?: string; ipAddress?: string; userAgent?: string }
-  ): Promise<PaymentAttemptWithTransactions> {
+  ): Promise<CreatePaymentAttemptResult> {
     const validated = createPaymentAttemptSchema.parse(input);
 
     // Check for existing attempt with same idempotency key
@@ -261,9 +271,10 @@ export class PaymentService {
       if (existing) {
         // Verify store ID matches for security
         if (existing.storeId !== validated.storeId) {
-          throw new Error('Idempotency key already used by another store');
+          // Return generic error to prevent information leakage
+          throw new Error('Idempotency key conflict');
         }
-        return existing;
+        return { attempt: existing, isExisting: true };
       }
     }
 
@@ -299,7 +310,7 @@ export class PaymentService {
       },
     });
 
-    return attempt;
+    return { attempt, isExisting: false };
   }
 
   /**

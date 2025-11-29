@@ -26,7 +26,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { PaymentService, createPaymentAttemptSchema } from '@/lib/services/payment.service';
-import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
 export async function POST(request: NextRequest) {
@@ -52,19 +51,10 @@ export async function POST(request: NextRequest) {
       idempotencyKey,
     });
 
-    // Check for existing attempt with same idempotency key before creating
-    let isExisting = false;
-    if (idempotencyKey) {
-      const existingAttempt = await prisma.paymentAttempt.findUnique({
-        where: { idempotencyKey },
-      });
-      isExisting = !!existingAttempt;
-    }
-
     // Create or retrieve attempt
     const paymentService = PaymentService.getInstance();
 
-    const attempt = await paymentService.createAttempt(input, {
+    const { attempt, isExisting } = await paymentService.createAttempt(input, {
       userId: (session.user as typeof session.user & { id?: string }).id,
       ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
       userAgent: request.headers.get('user-agent') || undefined,
@@ -101,7 +91,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (error instanceof Error) {
-      if (error.message.includes('Idempotency key already used')) {
+      if (error.message.includes('Idempotency key')) {
         return NextResponse.json(
           { error: error.message },
           { status: 409 }
