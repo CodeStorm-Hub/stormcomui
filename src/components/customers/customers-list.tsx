@@ -39,11 +39,13 @@ import { DeleteCustomerDialog } from './delete-customer-dialog';
 interface Customer {
   id: string;
   name: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   phone?: string;
   totalOrders: number;
   totalSpent: number;
-  joinedAt: string;
+  createdAt: string;
   lastOrderAt?: string;
   status: 'active' | 'inactive';
 }
@@ -209,7 +211,9 @@ export function CustomersList({ storeId }: CustomersListProps) {
                 <TableRow key={customer.id}>
                   <TableCell>
                     <div>
-                      <p className="font-medium">{customer.name}</p>
+                      <p className="font-medium">
+                        {customer.name || `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'Unknown'}
+                      </p>
                       {customer.lastOrderAt && (
                         <p className="text-xs text-muted-foreground">
                           Last order: {formatDate(customer.lastOrderAt)}
@@ -236,7 +240,7 @@ export function CustomersList({ storeId }: CustomersListProps) {
                     {formatCurrency(customer.totalSpent)}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {formatDate(customer.joinedAt)}
+                    {customer.createdAt ? formatDate(customer.createdAt) : '-'}
                   </TableCell>
                   <TableCell>
                     <Badge variant={customer.status === 'active' ? 'default' : 'secondary'}>

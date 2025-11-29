@@ -50,7 +50,9 @@ type CustomerFormData = z.infer<typeof customerSchema>;
 
 interface Customer {
   id: string;
-  name: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   phone?: string;
   status: 'active' | 'inactive';
