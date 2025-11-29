@@ -7,11 +7,10 @@ currently being supported with security updates.
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+| 0.1.x   | :white_check_mark: |
+| < 0.1   | :x:                |
 
+**Note:** This project is in early development (pre-1.0.0). Formal version support policies will be established after the 1.0.0 release.
 ## Reporting a Vulnerability
 
 Use this section to tell people how to report a vulnerability.
