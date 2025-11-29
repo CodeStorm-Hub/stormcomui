@@ -226,7 +226,8 @@ export class StoreService {
     options: ListStoresOptions = {},
     userId?: string,
     userRole?: string,
-    userStoreId?: string
+    userStoreId?: string,
+    userOrganizationId?: string
   ): Promise<StoreListResult> {
     const {
       page = 1,
@@ -244,8 +245,15 @@ export class StoreService {
     };
 
     // Role-based filtering
-    if (userRole !== 'SUPER_ADMIN' && userStoreId) {
-      where.id = userStoreId; // Non-super admins only see their store
+    if (userRole !== 'SUPER_ADMIN') {
+      // Organization-level roles (OWNER, ADMIN, MEMBER, VIEWER) - filter by organizationId
+      if (userOrganizationId && ['OWNER', 'ADMIN', 'MEMBER', 'VIEWER'].includes(userRole || '')) {
+        where.organizationId = userOrganizationId;
+      }
+      // Store-level roles (STORE_ADMIN, SALES_MANAGER, etc.) - filter by storeId
+      else if (userStoreId) {
+        where.id = userStoreId;
+      }
     }
 
     if (search) {

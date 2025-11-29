@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { checkPermission } from '@/lib/auth-helpers';
+import { checkPermission, getUserContext } from '@/lib/auth-helpers';
 import { withRateLimit } from '@/middleware/rate-limit';
 import { StoreService, CreateStoreSchema } from '@/lib/services/store.service';
 import { requireOrganizationId } from '@/lib/get-current-user';
@@ -49,6 +49,27 @@ export const GET = withRateLimit(async (request: NextRequest) => {
       );
     }
 
+    // Get user context for role-based filtering
+    const userContext = await getUserContext();
+    
+    // Determine effective role for store filtering
+    let effectiveRole: string | undefined;
+    let userStoreId: string | undefined;
+    let userOrganizationId: string | undefined;
+    
+    if (userContext) {
+      if (userContext.isSuperAdmin) {
+        effectiveRole = 'SUPER_ADMIN';
+      } else if (userContext.storeRole) {
+        effectiveRole = userContext.storeRole;
+        userStoreId = userContext.storeId;
+      } else if (userContext.organizationRole) {
+        effectiveRole = userContext.organizationRole;
+        userOrganizationId = userContext.organizationId;
+        userStoreId = userContext.storeId;
+      }
+    }
+
     const storeService = StoreService.getInstance();
     const result = await storeService.list(
       {
@@ -57,8 +78,9 @@ export const GET = withRateLimit(async (request: NextRequest) => {
         subscriptionStatus: queryInput.subscriptionStatus as SubscriptionStatus | undefined,
       },
       session.user.id,
-      undefined, // TODO: Add role from session
-      undefined  // TODO: Add storeId from session
+      effectiveRole,
+      userStoreId,
+      userOrganizationId
     );
 
     return NextResponse.json({
