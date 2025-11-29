@@ -327,10 +327,20 @@ export class InventoryService {
         { inventoryStatus: 'asc' },
         { inventoryQty: 'asc' },
       ],
+      // Limit to reasonable number to prevent memory issues on large stores
+      take: 500,
     });
 
     // Get active reservations for all products
+    // Note: This query is scoped to low/out-of-stock products only (typically a small subset)
+    // The take: 500 limit above ensures this doesn't cause performance issues
     const productIds = products.map(p => p.id);
+    
+    // Skip reservation query if no products found
+    if (productIds.length === 0) {
+      return [];
+    }
+    
     const reservations = await prisma.inventoryReservation.groupBy({
       by: ['productId', 'variantId'],
       where: {

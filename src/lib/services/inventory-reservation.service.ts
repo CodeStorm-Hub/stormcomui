@@ -170,7 +170,10 @@ export class InventoryReservationService {
 
       // If any errors occurred, throw to rollback transaction
       if (errors.length > 0 && reservations.length === 0) {
-        throw new Error('All reservations failed');
+        const errorSummary = errors.map(e => 
+          `${e.productId}${e.variantId ? `/${e.variantId}` : ''}: ${e.message}`
+        ).join('; ');
+        throw new Error(`All reservations failed: ${errorSummary}`);
       }
     });
 
@@ -347,9 +350,12 @@ export class InventoryReservationService {
     }
 
     // Calculate new expiration time
-    const newExpiresAt = new Date(
-      Math.max(reservation.expiresAt.getTime(), Date.now()) + extensionMinutes * 60 * 1000
-    );
+    // Use Math.max to handle the edge case where reservation hasn't expired yet but is close
+    // to expiring. This ensures the extension always adds time from the later of:
+    // - the current expiration time (if not yet expired), or
+    // - the current time (if already expired, we extend from now)
+    const baseTime = Math.max(reservation.expiresAt.getTime(), Date.now());
+    const newExpiresAt = new Date(baseTime + extensionMinutes * 60 * 1000);
 
     const updated = await prisma.inventoryReservation.update({
       where: { id: reservationId },
